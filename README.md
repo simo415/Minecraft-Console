@@ -43,18 +43,18 @@ Both mods can be installed with the instructions found in the modloader thread.
 > 1. Go to Applications>Utilities and open terminal.
 > 2. Type in the following, line by line: 
 >
->        cd ~
->        mkdir mctmp
->        cd mctmp
->        jar xf ~/Library/Application\ Support/minecraft/bin/minecraft.jar
+>           cd ~
+>           mkdir mctmp
+>           cd mctmp
+>           jar xf ~/Library/Application\ Support/minecraft/bin/minecraft.jar
 >
 > 3. Outside of terminal, copy all the files and folders into the mctmp directory.
 > 4. Back inside terminal, type in the following:
 >
->        rm META-INF/MOJANG_C.*
->        jar uf ~/Library/Application\ Support/minecraft/bin/minecraft.jar ./
->        cd ..
->        rm -rf mctmp
+>           rm META-INF/MOJANG_C.*
+>           jar uf ~/Library/Application\ Support/minecraft/bin/minecraft.jar ./
+>           cd ..
+>           rm -rf mctmp
 >
 > 5. Run Minecraft, enjoy!
 
