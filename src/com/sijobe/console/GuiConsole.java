@@ -30,7 +30,8 @@ import org.lwjgl.opengl.GL11;
 /**
  * TODO: P1 - Only save logs for the current world
  * TODO: P1 - Input/output filtering
- * TODO: P3 - Text selection
+ * DONE: P3 - Text selection
+ * TODO: p2 - Text selection in the chat-history field
  * TODO: P2 - Spinner (tab auto complete)
  * TODO: P3 - Drop down menus
  * TODO: P2 - Improve look and feel
@@ -60,6 +61,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private int cursor;                                               // Position of the cursor
    private int inputOffset;                                          // Position in the message string where the input goes
    private int sliderHeight;                                         // Height of the scroll bar
+   private boolean isHighlighting;												// Keeps track of the highlight mouse click
+   private int initialHighlighting;												// Position of the mouse (at character) initially for highlighting
+   private int lastHighlighting;													// Position of the mouse (at character) at end of highlighting
    private boolean isSliding;                                        // Keeps track of the slider mouse click
    private int lastSliding;                                          // Position of mouse at last frame for slider
    private int initialSliding;                                       // Position of mouse initially for slider
@@ -97,6 +101,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int[] BOTTOM;                                      // Poor implementation to keep track of drawn scrollbar bottom button
    private static int[] BAR;                                         // Poor implementation to keep track of drawn scrollbar
    private static int[] EXIT;                                        // Poor implementation to keep track of drawn exit button
+   private static int[] TEXT_BOX;												// Poor implementation to keep track of drawn text box
 
    private static int CHARHEIGHT = 10;                               // Character height - used to quickly determine number of lines per view
    private static double CHARWIDTH = 6;                              // Maximum character width - used to quickly determine line length
@@ -142,6 +147,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int COLOR_INPUT_TEXT = 0xE0E0E0;                   // Colour of the input text
    private static int COLOR_TEXT_OUTPUT = 0xE0E0E0;                  // Colour of the text output
    private static int COLOR_TEXT_TITLE = 0xE0E0E0;                   // Colour of the text title
+   private static int COLOR_TEXT_HIGHLIGHT = 0xFF2090DD;             // Colour of the text highlighting
    private static int COLOR_SCROLL_ARROW = 0xFFFFFF;                 // Colour of the scroll arrow
    private static int COLOR_EXIT_BUTTON_TEXT = 0xFFFFFF;             // Colour of the exit button label
    private static int COLOR_EXIT_BUTTON = 0xBB999999;                // Colour of the exit button
@@ -178,6 +184,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       BOTTOM = new int[4];
       BAR = new int[4];
       EXIT = new int[4];
+      TEXT_BOX = new int[4];
       INSTANCE = new GuiConsole();
       if (!MOD_DIR.exists()) {
          try {
@@ -347,6 +354,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
       lastSliding = -1;
       slider = 0;
       initialSliding = 0;
+      isHighlighting = false;
+      lastHighlighting = 0;
+      initialHighlighting = 0;
       cursor = 0;
       message = "";
       updateCounter = 0;
@@ -417,22 +427,45 @@ public class GuiConsole extends GuiScreen implements Runnable {
       // Control + ?
       if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {
          if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
-            setClipboardString(message);
+         	if(lastHighlighting == initialHighlighting)
+         		setClipboardString(message);
+         	else{
+         		if(initialHighlighting < lastHighlighting)
+         			setClipboardString(message.substring(initialHighlighting, lastHighlighting));
+         		else
+         			setClipboardString(message.substring(lastHighlighting, initialHighlighting));
+         	}
          } else if (Keyboard.isKeyDown(Keyboard.KEY_V)) {
             String clipboard = getClipboardString();
             if (clipboard != null) {
-               String start = "";
-               String end = "";
-               if (message != null && message.length() > 0) {
-                  start = message.substring(0,cursor);
-                  end = message.substring(cursor);
-               }
-               int limit = INPUT_MAX - message.length();
-               if (limit < clipboard.length()) {
-                  clipboard = clipboard.substring(0,limit);
-               }
-               message = start + clipboard + end;
-               cursor = (start + clipboard).length() + 1;
+            	if(lastHighlighting == initialHighlighting){
+	               String start = "";
+	               String end = "";
+	               if (message != null && message.length() > 0) {
+	                  start = message.substring(0,cursor);
+	                  end = message.substring(cursor);
+	               }
+	               int limit = INPUT_MAX - message.length();
+	               if (limit < clipboard.length()) {
+	                  clipboard = clipboard.substring(0,limit);
+	               }
+	               message = start + clipboard + end;
+	               cursor = (start + clipboard).length() + 1;
+            	}else{
+            		String start, end;
+               	if(initialHighlighting < lastHighlighting){
+               		start = message.substring(0, initialHighlighting);
+               		end = message.substring(lastHighlighting);
+               	}else{
+               		start = message.substring(0, lastHighlighting);
+               		end = message.substring(initialHighlighting);
+               	}
+               	
+               	message = start + clipboard + end;
+               	cursor = (start + clipboard).length() + 1;
+               	initialHighlighting = 0;
+               	lastHighlighting = 0;
+            	}
             }
          }
          return;
@@ -473,6 +506,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
                inputOffset = 0;
                historyPosition = 0;
             }
+            
+            initialHighlighting = 0;
+         	lastHighlighting = 0;
             break;
 
          case Keyboard.KEY_LEFT:
@@ -489,21 +525,40 @@ public class GuiConsole extends GuiScreen implements Runnable {
             // Moves the history position down
             message = getInputHistory(--historyPosition);
             cursor = message.length();
+            initialHighlighting = 0;
+         	lastHighlighting = 0;
             break;
 
          case Keyboard.KEY_UP:
             // Moves the history position down
             message = getInputHistory(++historyPosition);
             cursor = message.length();
+            initialHighlighting = 0;
+         	lastHighlighting = 0;
             break;
 
          case Keyboard.KEY_DELETE:
             // Delete
             if (message.length() > 0) {
-               validateCursor();
-               String start = message.substring(0,cursor);
-               String end = message.substring(cursor,message.length());
-               this.message = start + (end.length() > 0 ? end.substring(1) : end);
+               if(initialHighlighting == lastHighlighting){
+               	validateCursor();
+	               String start = message.substring(0,cursor);
+	               String end = message.substring(cursor,message.length());
+	               this.message = start + (end.length() > 0 ? end.substring(1) : end);
+               }else{
+               	String start, end;
+               	if(initialHighlighting < lastHighlighting){
+               		start = message.substring(0, initialHighlighting);
+               		end = message.substring(lastHighlighting);
+               	}else{
+               		start = message.substring(0, lastHighlighting);
+               		end = message.substring(initialHighlighting);
+               	}
+               	
+               	message = start + end;
+               	initialHighlighting = 0;
+               	lastHighlighting = 0;
+               }
             }
             break;
 
@@ -553,23 +608,54 @@ public class GuiConsole extends GuiScreen implements Runnable {
          case Keyboard.KEY_BACK:
             // Backspace
             if (message.length() > 0) {
-               validateCursor();
-               String start = message.substring(0,cursor);
-               String end = message.substring(cursor,message.length());
-               this.message = start.substring(0,(start.length() - 1 > -1 ? start.length() - 1 : 0)) + end;
-               cursor--;
-               inputOffset--;
+            	if(initialHighlighting == lastHighlighting){
+	               validateCursor();
+	               String start = message.substring(0,cursor);
+	               String end = message.substring(cursor,message.length());
+	               this.message = start.substring(0,(start.length() - 1 > -1 ? start.length() - 1 : 0)) + end;
+	               cursor--;
+	               inputOffset--;
+	            }else{
+	            	String start, end;
+	            	if(initialHighlighting < lastHighlighting){
+	            		start = message.substring(0, initialHighlighting);
+	            		end = message.substring(lastHighlighting);
+	            	}else{
+	            		start = message.substring(0, lastHighlighting);
+	            		end = message.substring(initialHighlighting);
+	            	}
+	            	
+	            	message = start + end;
+	            	initialHighlighting = 0;
+	            	lastHighlighting = 0;
+	            }
             }
             break;
 
          default:
             // Verifies that the character is in the character set before adding 
             if(ALLOWED_CHARACTERS.indexOf(key) >= 0 && this.message.length() < INPUT_MAX) { 
-               validateCursor();
-               String start = message.substring(0,cursor);
-               String end = message.substring(cursor,message.length());
-               this.message = start + key + end;
-               cursor++;
+            	if(initialHighlighting == lastHighlighting){
+	               validateCursor();
+	               String start = message.substring(0,cursor);
+	               String end = message.substring(cursor,message.length());
+	               this.message = start + key + end;
+	               cursor++;
+	            }else{
+	            	String start, end;
+	            	if(initialHighlighting < lastHighlighting){
+	            		start = message.substring(0, initialHighlighting);
+	            		end = message.substring(lastHighlighting);
+	            	}else{
+	            		start = message.substring(0, lastHighlighting);
+	            		end = message.substring(initialHighlighting);
+	            	}
+	            	
+	            	message = start + key + end;
+	            	cursor = start.length() + 1;
+	            	initialHighlighting = 0;
+	            	lastHighlighting = 0;
+	            }
             }
       }
    }
@@ -712,7 +798,32 @@ public class GuiConsole extends GuiScreen implements Runnable {
       int textbox_miny = maxy-CHARHEIGHT-BORDERSIZE;
       int textbox_maxy = maxy-BORDERSIZE;
       drawRect(textbox_minx,textbox_miny,textbox_maxx,textbox_maxy,COLOR_INPUT_BACKGROUND);
-
+      TEXT_BOX = new int[]{textbox_minx ,textbox_miny, textbox_maxx, textbox_maxy};
+      
+      // Highlighting
+      if(lastHighlighting != initialHighlighting){
+      	int firstH, lastH; //First letter position, last letter position
+      	if(initialHighlighting < lastHighlighting){
+      		firstH = initialHighlighting;
+      		lastH = lastHighlighting;
+      	}else{
+      		firstH = lastHighlighting;
+      		lastH = initialHighlighting;
+      	}
+      	
+	      int highlighting_minx = 1+TEXT_BOX[0]+fontRenderer.getStringWidth(INPUT_PREFIX)+fontRenderer.getStringWidth(message.substring(0, firstH));
+	      int highlighting_maxx = 1+highlighting_minx + fontRenderer.getStringWidth(message.substring(firstH, lastH));
+	      int highlighting_miny = TEXT_BOX[1];
+	      int highlighting_maxy = highlighting_miny + CHARHEIGHT;
+	      if(cursor > firstH && cursor < lastH)
+	      	highlighting_maxx += fontRenderer.getStringWidth("!");
+	      else if(cursor <= firstH){
+	      	highlighting_minx += fontRenderer.getStringWidth("!");
+	      	highlighting_maxx += fontRenderer.getStringWidth("!");
+	      }
+	      drawRect(highlighting_minx,highlighting_miny,highlighting_maxx,highlighting_maxy,0xff2090DD);
+      }
+      
       // Past messages - dialog
       int message_miny = miny+BORDERSIZE;
       int message_maxy = textbox_miny - BORDERSIZE;
@@ -819,7 +930,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       drawRect(maxx - BORDERSIZE - 10, BORDERSIZE, maxx - BORDERSIZE, miny, COLOR_EXIT_BUTTON);
       fontRenderer.drawString("X",maxx-BORDERSIZE-7,BORDERSIZE+2,COLOR_EXIT_BUTTON_TEXT);
       EXIT = new int[] {maxx - BORDERSIZE - 10, BORDERSIZE, maxx - BORDERSIZE, miny};
-
+      
       super.drawScreen(mousex, mousey, f);
    }
 
@@ -831,6 +942,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * @param i position of the x coordinate
     * @param j position of the y coordinate
     * @param k colour of the render
+    * @param flag if true draw with shadow, if false draw without shadow
     */
    public void drawStringFlipped(FontRenderer fontrenderer, String s, int i, int j, int k, boolean flag) {
       GL11.glPushMatrix();
@@ -852,17 +964,27 @@ public class GuiConsole extends GuiScreen implements Runnable {
    protected void mouseClicked(int mousex, int mousey, int button) {
       if(button == 0) {
          // Bad implementation which checks for clicks on exit button
-         if (mousex >= EXIT[0] && mousex <= EXIT[2] && mousey >= EXIT[1] && mousey <= EXIT[3]) {
+         if (hitTest(mousex, mousey, EXIT)) {
             mc.displayGuiScreen(null);
             return;
-         }
-         // Bad implementation which checks for clicks on scrollbar
-         if (mousex >= TOP[0] && mousex <= TOP[2] && mousey >= TOP[1] && mousey <= TOP[3]) slider++;
-         if (mousex >= BOTTOM[0] && mousex <= BOTTOM[2] && mousey >= BOTTOM[1] && mousey <= BOTTOM[3]) slider--;
-         if (mousex >= BAR[0] && mousex <= BAR[2] && mousey >= BAR[1] && mousey <= BAR[3]) {
+            // Bad implementation which checks for clicks on scrollbar
+         }else if (hitTest(mousex, mousey, TOP))
+         	slider++;
+         else if (hitTest(mousex, mousey, BOTTOM))
+         	slider--;
+         else if (hitTest(mousex, mousey, BAR)) {
             isSliding = true;
             lastSliding = mousey;
             initialSliding = slider;
+         }else if(hitTest(mousex, mousey, TEXT_BOX)){
+         	isHighlighting = true;
+         	int charat = (int) ((mousex-TEXT_BOX[0]-fontRenderer.getStringWidth(INPUT_PREFIX))/CHARWIDTH);
+         	if(message.length() < charat)
+         		initialHighlighting = message.length();
+         	else
+         		initialHighlighting = charat;
+         	lastHighlighting = initialHighlighting;
+         	
          }
 
          if(this.mc.ingameGUI.field_933_a != null) {
@@ -879,6 +1001,22 @@ public class GuiConsole extends GuiScreen implements Runnable {
             super.mouseClicked(mousex, mousey, button);
          }
       }
+   }
+   
+   /**
+    * Tests whether the (x, y) coordinate is within the rectangle or not
+    * 
+    * @param x x coordinate
+    * @param y y coordinate
+    * @param rect integer array in the form of {x, y, width, height}
+    * @return true if point is in rect false if point is not in rect
+    */
+   
+   public boolean hitTest(int x, int y, int[] rect){
+   	if(x >= rect[0] && x <= rect[2] && y >= rect[1] && y <= rect[3])
+   		return true;
+   	else
+   		return false;
    }
 
    /**
@@ -905,6 +1043,18 @@ public class GuiConsole extends GuiScreen implements Runnable {
             lastSliding = 0;
             initialSliding = 0;
          }
+      }else if(isHighlighting){
+      	int charat = (int) ((mousex-TEXT_BOX[0]-fontRenderer.getStringWidth(INPUT_PREFIX))/CHARWIDTH);
+      	if(message.length() < charat)
+      		lastHighlighting = message.length();
+      	else
+      		lastHighlighting = charat;
+      	if(!Mouse.isButtonDown(0)){
+      		isHighlighting = false;
+      		if(lastHighlighting == initialHighlighting){
+      			cursor = initialHighlighting;
+      		}
+      	}
       }
    }
 
@@ -1091,8 +1241,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
     */
    public static void readSettings(Class<?> base, File settings) {
       Properties p = new Properties();
-      try {
-         p.load(new FileInputStream(settings));
+		try {
+			p.load(new FileInputStream(settings));
          Field[] declaredFields = base.getDeclaredFields();
          for (Field field : declaredFields) {
             if (Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers())) {
