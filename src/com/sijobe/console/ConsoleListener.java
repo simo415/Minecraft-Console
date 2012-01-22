@@ -1,4 +1,4 @@
-package net.minecraft.src;
+package com.sijobe.console;
 
 
 /**

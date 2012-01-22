@@ -1,5 +1,7 @@
 package net.minecraft.src;
 
+import com.sijobe.console.GuiConsole;
+
 import org.lwjgl.input.Keyboard;
 import net.minecraft.client.Minecraft;
 

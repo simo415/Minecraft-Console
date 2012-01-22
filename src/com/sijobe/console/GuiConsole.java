@@ -1,4 +1,6 @@
-package net.minecraft.src;
+package com.sijobe.console;
+
+import net.minecraft.src.*;
 
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
@@ -12,7 +14,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -34,8 +35,6 @@ import org.lwjgl.opengl.GL11;
  * TODO: P3 - Drop down menus
  * TODO: P2 - Improve look and feel
  * DONE: P1 - Username autocomplete (servers)
- * DONE: P1 - Key bindings (tick hook)
- * DONE: P1 - Validate clipboard string has valid characters
  * 
  * @author simo_415
  * 
@@ -55,109 +54,114 @@ import org.lwjgl.opengl.GL11;
  */
 public class GuiConsole extends GuiScreen implements Runnable {
 
-   protected String message;
-   private int updateCounter;
-   private int slider;
-   private int cursor;
-   private int inputOffset;
-   private int sliderHeight;
-   private boolean isSliding;
-   private int lastSliding;
-   private int initialSliding;
-   private int historyPosition;
-   private boolean isGuiOpen;
-   private ChatLine lastOutput;
-   private boolean rebuildLines;
-   private volatile Vector<String> log;
-   private SimpleDateFormat sdf;
-   
-   private int tabPosition;
-   private String tabWord;
-   
-   private volatile HashMap<String,String> keyBindings;
-   private volatile List<Integer> keyDown;
-   private static boolean BACKGROUND_BINDING_EVENTS = false;
+   protected String message;                                         // The current user input
+   private int updateCounter;                                        // The tick count - used for cursor blink rate
+   private int slider;                                               // Position of the scroll bar
+   private int cursor;                                               // Position of the cursor
+   private int inputOffset;                                          // Position in the message string where the input goes
+   private int sliderHeight;                                         // Height of the scroll bar
+   private boolean isSliding;                                        // Keeps track of the slider mouse click
+   private int lastSliding;                                          // Position of mouse at last frame for slider
+   private int initialSliding;                                       // Position of mouse initially for slider
+   private int historyPosition;                                      // Position of where in the history you are at
+   private boolean isGuiOpen;                                        // When the console is open this is true
+   private ChatLine lastOutput;                                      // The last message to go into the Minecraft chatline
+   private boolean rebuildLines;                                     // Keeps track of whether the lines list needs to be rebuilt
+   private volatile Vector<String> log;                              // The log messages
+   private SimpleDateFormat sdf;                                     // The date format for logs
 
-   private String logName;
-   private long lastWrite;
+   private int tabPosition;                                          // Where you have tabbed to through user list
+   private String tabWord;                                           // The current tabbed word
 
-   private static final String ALLOWED_CHARACTERS;
+   private volatile HashMap<String,String> keyBindings;              // All the current key bindings
+   private volatile List<Integer> keyDown;                           // List of all the keys currently held down
+   private static boolean BACKGROUND_BINDING_EVENTS = false;         // Allows the bindings to run ingame with different GUIs open
 
-   private static int MESSAGE_MAXX;
-   private static int MESSAGE_MINX;
+   private String logName;                                           // The name of the log file to write
+   private long lastWrite;                                           // The time of the last log write
 
-   public static Vector<String> INPUT_HISTORY;
-   private static Vector<String> LINES;
-   private static Vector<String> MESSAGES;
-   private static Vector<ConsoleListener> LISTENERS;
+   private static final String ALLOWED_CHARACTERS;                   // A list of permitted characters
 
-   private static volatile List IN_GAME_GUI;
-   private static List IN_GAME_GUI_TEMP;
+   private static int MESSAGE_MAXX;                                  // Maximum size of the message GUI
+   private static int MESSAGE_MINX;                                  // Minimum size of the message GUI
 
-   private static int[] TOP;
-   private static int[] BOTTOM;
-   private static int[] BAR;
-   private static int[] EXIT;
+   public static Vector<String> INPUT_HISTORY;                       // All the input which went into the console
+   private static Vector<String> LINES;                              // All of the lines to output
+   private static Vector<String> MESSAGES;                           // All of the input/output
+   private static Vector<ConsoleListener> LISTENERS;                 // All of the console listeners which were registered
 
-   // Character height - used to quickly determine number of lines per view
-   private static int CHARHEIGHT = 10;
-   // Maximum character width - used to quickly determine line length
-   private static double CHARWIDTH = 6;
+   private static volatile List IN_GAME_GUI;                         // The ingamegui message list
+   private static List IN_GAME_GUI_TEMP;                             // Used when the console is open to not display messages on INGAMEGUI
 
-   private static boolean CLOSE_ON_SUBMIT = false;
+   private static int[] TOP;                                         // Poor implementation to keep track of drawn scrollbar top button
+   private static int[] BOTTOM;                                      // Poor implementation to keep track of drawn scrollbar bottom button
+   private static int[] BAR;                                         // Poor implementation to keep track of drawn scrollbar
+   private static int[] EXIT;                                        // Poor implementation to keep track of drawn exit button
 
-   private static int INPUT_MAX = 100;
-   private static int INPUT_HISTORY_MAX = 50;
-   private static String INPUT_PREFIX = "> ";
+   private static int CHARHEIGHT = 10;                               // Character height - used to quickly determine number of lines per view
+   private static double CHARWIDTH = 6;                              // Maximum character width - used to quickly determine line length
 
-   private static boolean PRINT_INPUT = true;
-   private static boolean PRINT_OUTPUT = true;
+   private static boolean CLOSE_ON_SUBMIT = false;                   // Closes the GUI after the input has been submit
 
-   private static boolean HISTORY_BETWEEN_WORLDS = true;
+   private static int INPUT_MAX = 150;                               // Maximum input size on the console
+   private static int INPUT_SERVER_MAX = 100;                        // Maximum server message size - splits the input to this length if it is longer
+   private static int INPUT_HISTORY_MAX = 50;                        // Maximum size of stored input history
+   private static String INPUT_PREFIX = "> ";                        // Prefix for all input messages 
 
-   public static final int LOGGING_TRACE = 8;
-   public static final int LOGGING_DEBUG = 4;
-   public static final int LOGGING_INPUT = 2;
-   public static final int LOGGING_OUTPUT = 1;
-   private static int LOGGING = LOGGING_INPUT + LOGGING_OUTPUT;
-   private static long LOG_WRITE_INTERVAL = 1000L;
+   private static boolean PRINT_INPUT = true;                        // Prints the input
+   private static boolean PRINT_OUTPUT = true;                       // Prints the output
+
+   private static boolean HISTORY_BETWEEN_WORLDS = true;             // Not used
+
+   public static final int LOGGING_TRACE = 8;                        // Logging level - Trace
+   public static final int LOGGING_DEBUG = 4;                        // Logging level - Debug
+   public static final int LOGGING_INPUT = 2;                        // Logging level - Input
+   public static final int LOGGING_OUTPUT = 1;                       // Logging level - Output
+   private static int LOGGING = LOGGING_INPUT + LOGGING_OUTPUT;      // What is currently being logged
+   private static long LOG_WRITE_INTERVAL = 1000L;                   // How often (in ms) the logs are written to file
+   // The log line separator
    private static String LINE_BREAK = System.getProperty("line.separator");
 
-   private static String DATE_FORMAT_LOG = "yyyy-MM-dd hh:mm:ss: ";
+   private static String DATE_FORMAT_LOG = "yyyy-MM-dd hh:mm:ss: ";  // The date format according to SimpleDateFormat
+   // The date format filename (uses SimpleDateFormat)
    private static String DATE_FORMAT_FILENAME = "yyyyMMdd_hhmmss'.log'";
 
-   private static int OUTPUT_MAX = 200;
+   private static int OUTPUT_MAX = 200;                              // Maximum number of lines in the output
 
-   private static long POLL_DELAY = 20L;
+   private static long POLL_DELAY = 20L;                             // The amount of time (in ms) to run the thread at
 
-   private static int BORDERSIZE = 2;
-   private static int SCREEN_PADDING_LEFT = 5;
-   private static int SCREEN_PADDING_TOP = 12;
-   private static int SCREEN_PADDING_RIGHT = 5;
-   private static int SCREEN_PADDING_BOTTOM = 40;
+   private static int BORDERSIZE = 2;                                // Size of the border
+   private static int SCREEN_PADDING_LEFT = 5;                       // Size of the screen padding - left
+   private static int SCREEN_PADDING_TOP = 12;                       // Size of the screen padding - top
+   private static int SCREEN_PADDING_RIGHT = 5;                      // Size of the screen padding - right
+   private static int SCREEN_PADDING_BOTTOM = 40;                    // Size of the screen padding - bottom
 
-   private static int COLOR_BASE = 0x90000000;
-   private static int COLOR_SCROLL_BACKGROUND = 0xBB999999;
-   private static int COLOR_SCROLL_FOREGROUND = 0xBB404040;
-   private static int COLOR_INPUT_TEXT = 0xE0E0E0;
-   private static int COLOR_TEXT_OUTPUT = 0xE0E0E0;
-   private static int COLOR_TEXT_TITLE = 0xE0E0E0;
-   private static int COLOR_SCROLL_ARROW = 0xFFFFFF;
-   private static int COLOR_EXIT_BUTTON_TEXT = 0xFFFFFF;
-   private static int COLOR_EXIT_BUTTON = 0xBB999999;
-   private static int COLOR_OUTPUT_BACKGROUND = 0xBB999999;
-   private static int COLOR_INPUT_BACKGROUND = 0xBB999999;
+   private static int COLOR_BASE = 0x90000000;                       // Base colour to use for console
+   private static int COLOR_SCROLL_BACKGROUND = 0xBB999999;          // Scroll background colour
+   private static int COLOR_SCROLL_FOREGROUND = 0xBB404040;          // Scroll foreground colour
+   private static int COLOR_INPUT_TEXT = 0xE0E0E0;                   // Colour of the input text
+   private static int COLOR_TEXT_OUTPUT = 0xE0E0E0;                  // Colour of the text output
+   private static int COLOR_TEXT_TITLE = 0xE0E0E0;                   // Colour of the text title
+   private static int COLOR_SCROLL_ARROW = 0xFFFFFF;                 // Colour of the scroll arrow
+   private static int COLOR_EXIT_BUTTON_TEXT = 0xFFFFFF;             // Colour of the exit button label
+   private static int COLOR_EXIT_BUTTON = 0xBB999999;                // Colour of the exit button
+   private static int COLOR_OUTPUT_BACKGROUND = 0xBB999999;          // Colour of the output background
+   private static int COLOR_INPUT_BACKGROUND = 0xBB999999;           // Colour of the input background
 
-   public static final String VERSION = "1.2";
-   private static String TITLE = "Console v" + VERSION;
+   public static final String VERSION = "1.2";                       // Version of the mod
+   private static String TITLE = "Console";                          // Title of the console
 
-   private static final String MOD_PATH = "mods/console/";
-   private static String LOG_PATH = "mods/console/logs";
+   private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
+   private static String LOG_PATH = "mods/console/logs";             // Relative location of the console logs
+   // Mod directory
    private static File MOD_DIR = new File(Minecraft.getMinecraftDir(),MOD_PATH);
-   private static File LOG_DIR;
+   private static File LOG_DIR;                                      // Log directory
 
-   private static GuiConsole INSTANCE;
+   private static GuiConsole INSTANCE;                               // Instance of the class for singleton pattern
 
+   /**
+    * Initialises all of the instance variables
+    */
    static {
       if ((new File(MOD_DIR,"gui.properties")).exists()) {
          readSettings(GuiConsole.class, new File(MOD_DIR,"gui.properties"));
@@ -350,12 +354,14 @@ public class GuiConsole extends GuiScreen implements Runnable {
       isGuiOpen = true;
       rebuildLines = true;
       pullGuiList();
-      if (getInGameGuiList()) {
-         for (Object message : IN_GAME_GUI) {
-            IN_GAME_GUI_TEMP.add(0,message);
+      try {
+         if (getInGameGuiList()) {
+            for (Object message : IN_GAME_GUI) {
+               IN_GAME_GUI_TEMP.add(0,message);
+            }
+            IN_GAME_GUI.clear();
          }
-         IN_GAME_GUI.clear();
-      }
+      } catch (Exception e) {}
    }
 
    /**
@@ -369,12 +375,14 @@ public class GuiConsole extends GuiScreen implements Runnable {
       isGuiOpen = false;
 
       // Transfers the inGameGui messages back to the inGameGui object
-      if (!isGuiOpen) {
-         for (Object message : IN_GAME_GUI_TEMP) {
-            IN_GAME_GUI.add(0,message);
+      try {
+         if (!isGuiOpen) {
+            for (Object message : IN_GAME_GUI_TEMP) {
+               IN_GAME_GUI.add(0,message);
+            }
+            IN_GAME_GUI_TEMP.clear();
          }
-         IN_GAME_GUI_TEMP.clear();
-      }
+      } catch (Exception e) {}
    }
 
    /**
@@ -387,13 +395,15 @@ public class GuiConsole extends GuiScreen implements Runnable {
       updateCounter++;
 
       // Transfers the inGameGui messages from the inGameGui object to here
-      pullGuiList();
-      if (isGuiOpen) {
-         for (int i = IN_GAME_GUI.size() - 1; i > -1; i--) {
-            IN_GAME_GUI_TEMP.add(IN_GAME_GUI.get(i));
+      try {
+         pullGuiList();
+         if (isGuiOpen) {
+            for (int i = IN_GAME_GUI.size() - 1; i > -1; i--) {
+               IN_GAME_GUI_TEMP.add(IN_GAME_GUI.get(i));
+            }
+            IN_GAME_GUI.clear();
          }
-         IN_GAME_GUI.clear();
-      }
+      } catch (Exception e) {}
    }
 
    /**
@@ -427,7 +437,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
          return;
       }
-      
+
       if (id != Keyboard.KEY_TAB) {
          tabPosition = 0;
          tabWord = "";
@@ -443,9 +453,17 @@ public class GuiConsole extends GuiScreen implements Runnable {
          case Keyboard.KEY_RETURN:
             // Submits the message
             String s = message.trim();
+
             if (s.length() > 0) {
+               if (isMultiplayerMode()) { // Verifies that each line doesnt pass the maximum server length
+                  for (int i = 0; i <= s.length() / INPUT_SERVER_MAX; i++) {
+                     int end = (i + 1) * INPUT_SERVER_MAX > s.length() ? s.length() : (i + 1) * INPUT_SERVER_MAX;
+                     mc.thePlayer.sendChatMessage(s.substring(i*INPUT_SERVER_MAX,end));
+                  }
+               } else {
+                  mc.thePlayer.sendChatMessage(s);
+               }
                addInputMessage(s);
-               mc.thePlayer.sendChatMessage(s);
             }
             if (CLOSE_ON_SUBMIT) {
                mc.displayGuiScreen(null);
@@ -496,7 +514,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                if (tabPosition != 0) {
                   str = tabWord;
                   if(tabPosition < 0){
-                	  tabPosition = 0;
+                     tabPosition = 0;
                   }
                } else if (message.contains(" ")) {
                   // Gets the last word in input
@@ -515,23 +533,23 @@ public class GuiConsole extends GuiScreen implements Runnable {
                      numMatches++;
                   }
                }
-               
+
                if(matched){
-	               if (message.contains(" ")) {
-	            	   message = message.substring(0, message.lastIndexOf(" ") + 1) + matches.get(tabPosition);
-	               } else {
-	            	   message = matches.get(tabPosition);
-	               }
-	               // Sets the cursor to the end of the input
-	               cursor = message.length();
-	               tabPosition++;
-	               if(tabPosition >= numMatches){
-	            	   tabPosition=-1;
-	               }
+                  if (message.contains(" ")) {
+                     message = message.substring(0, message.lastIndexOf(" ") + 1) + matches.get(tabPosition);
+                  } else {
+                     message = matches.get(tabPosition);
+                  }
+                  // Sets the cursor to the end of the input
+                  cursor = message.length();
+                  tabPosition++;
+                  if(tabPosition >= numMatches){
+                     tabPosition=-1;
+                  }
                }
             }
             break;
-            
+
          case Keyboard.KEY_BACK:
             // Backspace
             if (message.length() > 0) {
@@ -555,26 +573,35 @@ public class GuiConsole extends GuiScreen implements Runnable {
             }
       }
    }
-   
+
+   /**
+    * Returns true if the current game is being player on a server
+    * 
+    * @return True is returned when the current game is being played on a 
+    * Minecraft server
+    */
+   public boolean isMultiplayerMode() {
+      return mc.isMultiplayerWorld();
+   }
+
    /**
     * Gets all the usernames on the current server you're on
     * 
     * @return A list in alphabetical order of players logged onto the server
     */
    public List<String> getPlayerNames() {
-	   List<String> names;
-	   if(mc.theWorld.isRemote && mc.thePlayer instanceof EntityClientPlayerMP){
-		   names = new ArrayList<String>();
-		   NetClientHandler netclienthandler = ((EntityClientPlayerMP)mc.thePlayer).sendQueue;
-		   List<GuiSavingLevelString> tempList = netclienthandler.playerNames;
-		   for(GuiSavingLevelString string: tempList){
-			   names.add(string.name);
-		   }
-	   }else{
-		   names = null;
-	   }
-
-	   return names;
+      List<String> names;
+      if (isMultiplayerMode() && mc.thePlayer instanceof EntityClientPlayerMP) {
+         names = new ArrayList<String>();
+         NetClientHandler netclienthandler = ((EntityClientPlayerMP)mc.thePlayer).sendQueue;
+         List<GuiSavingLevelString> tempList = netclienthandler.playerNames;
+         for (GuiSavingLevelString string: tempList) {
+            names.add(string.name);
+         }
+      } else {
+         names = null;
+      }
+      return names;
    }
 
    /**
@@ -689,9 +716,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
       // Past messages - dialog
       int message_miny = miny+BORDERSIZE;
       int message_maxy = textbox_miny - BORDERSIZE;
-      if (textbox_minx != MESSAGE_MINX || MESSAGE_MAXX != maxx-(BORDERSIZE*2)-10) {
+      if (textbox_minx != MESSAGE_MINX || MESSAGE_MAXX != maxx - (BORDERSIZE * 2) - 10) {
          MESSAGE_MINX = textbox_minx;
-         MESSAGE_MAXX = maxx-(BORDERSIZE*2)-10;
+         MESSAGE_MAXX = maxx - (BORDERSIZE * 2) - 10;
          buildLines();
       }
 
@@ -725,8 +752,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
       // Scroll - button top
       drawRect(scroll_minx + 1, scroll_miny + 1,scroll_maxx - 1,scroll_miny + 9,COLOR_SCROLL_FOREGROUND);
-      //drawRect(scroll_minx + 2, scroll_miny + 2,scroll_maxx - 2,scroll_miny + 3,COLOR_SCROLL_SHADOW);
-      //drawRect(scroll_minx + 2, scroll_miny + 2,scroll_minx + 3,scroll_miny + 8,COLOR_SCROLL_SHADOW);
       TOP = new int[] {scroll_minx + 1, scroll_miny + 1,scroll_maxx - 1,scroll_miny + 9};
       drawString(this.mc.fontRenderer, "^", TOP[0] + 2, TOP[1] + 2, COLOR_SCROLL_ARROW);
 
@@ -802,17 +827,18 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * Draws the specified String flipped upside down
     * 
     * @param fontrenderer
-    * @param s
-    * @param i
-    * @param j
-    * @param k
+    * @param s string to draw
+    * @param i position of the x coordinate
+    * @param j position of the y coordinate
+    * @param k colour of the render
     */
    public void drawStringFlipped(FontRenderer fontrenderer, String s, int i, int j, int k, boolean flag) {
       GL11.glPushMatrix();
       GL11.glScalef(-1F, -1F, 1F);
       GL11.glTranslatef((-i * 2) - fontrenderer.getStringWidth(s), (-j * 2) - fontrenderer.FONT_HEIGHT, 0.0F);
-      if(flag)
-    	  fontrenderer.drawString(s, i - 1, j - 1, (k & 0xfcfcfc) >> 2 | k & 0xff000000); //Took the last argument from FrontRenderer.renderString() because it's private and I want the shadow on the correct side when flipped 
+      if(flag) {
+         fontrenderer.drawString(s, i - 1, j - 1, (k & 0xfcfcfc) >> 2 | k & 0xff000000); //Took the last argument from FrontRenderer.renderString() because it's private and I want the shadow on the correct side when flipped 
+      }
       fontrenderer.drawString(s, i, j, k);
       GL11.glPopMatrix();
    }
@@ -825,10 +851,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
    @Override
    protected void mouseClicked(int mousex, int mousey, int button) {
       if(button == 0) {
+         // Bad implementation which checks for clicks on exit button
          if (mousex >= EXIT[0] && mousex <= EXIT[2] && mousey >= EXIT[1] && mousey <= EXIT[3]) {
             mc.displayGuiScreen(null);
             return;
          }
+         // Bad implementation which checks for clicks on scrollbar
          if (mousex >= TOP[0] && mousex <= TOP[2] && mousey >= TOP[1] && mousey <= TOP[3]) slider++;
          if (mousex >= BOTTOM[0] && mousex <= BOTTOM[2] && mousey >= BOTTOM[1] && mousey <= BOTTOM[3]) slider--;
          if (mousex >= BAR[0] && mousex <= BAR[2] && mousey >= BAR[1] && mousey <= BAR[3]) {
@@ -865,6 +893,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          slider += wheel / 120;
       }
 
+      // Moves the slider position
       if (isSliding) {
          if (Mouse.isButtonDown(0)) {
             int diff = lastSliding - mousey;
@@ -938,21 +967,28 @@ public class GuiConsole extends GuiScreen implements Runnable {
       }
    }
 
+   /**
+    * Grabs to IN GAME GUI list of messages for the console mod. This allows
+    * the mod to display what goes onto the inbuild message line without 
+    * needing to change core classes.
+    */
    private void pullGuiList() {
-      if (getInGameGuiList() && IN_GAME_GUI.size() > 0 && !((ChatLine)IN_GAME_GUI.get(0)).equals(lastOutput)) {
-         int pointer = 0;
-         while (pointer < IN_GAME_GUI.size()) {
-            if (((ChatLine)IN_GAME_GUI.get(pointer)).equals(lastOutput)) {
-               break;
+      try {
+         if (getInGameGuiList() && IN_GAME_GUI.size() > 0 && !((ChatLine)IN_GAME_GUI.get(0)).equals(lastOutput)) {
+            int pointer = 0;
+            while (pointer < IN_GAME_GUI.size()) {
+               if (((ChatLine)IN_GAME_GUI.get(pointer)).equals(lastOutput)) {
+                  break;
+               }
+               pointer++;
             }
-            pointer++;
+            --pointer;
+            for (int i = pointer; i > -1; i--) {
+               addOutputMessage(((ChatLine)IN_GAME_GUI.get(i)).message);
+            }
+            lastOutput = (ChatLine)IN_GAME_GUI.get(0);
          }
-         --pointer;
-         for (int i = pointer; i > -1; i--) {
-            addOutputMessage(((ChatLine)IN_GAME_GUI.get(i)).message);
-         }
-         lastOutput = (ChatLine)IN_GAME_GUI.get(0);
-      }
+      } catch (Exception e) {}
    }
 
    /**
@@ -1068,7 +1104,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   if (field.getType().equals(String.class)) {
                      String property = (String)p.get(field.getName());
                      if (property != null) {
-                    	 field.set(null, property);
+                        field.set(null, property);
                      }
                   } else if (field.getType().equals(Integer.TYPE)) {
                      String property = (String)p.get(field.getName());
@@ -1148,7 +1184,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   } else if (field.getType().equals(Long.TYPE)) {
                      p.setProperty(field.getName(), field.getLong(null) + "");
                   } else if (field.getType().equals(String.class)) {
-                		 p.setProperty(field.getName(), (String)field.get(null));
+                     p.setProperty(field.getName(), (String)field.get(null));
                   } else if (field.getType().equals(Byte.TYPE)) {
                      p.setProperty(field.getName(), field.getByte(null) + "");
                   } else if (field.getType().equals(Short.TYPE)) {
