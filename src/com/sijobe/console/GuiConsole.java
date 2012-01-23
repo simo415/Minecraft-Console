@@ -31,7 +31,8 @@ import org.lwjgl.opengl.GL11;
  * TODO: P1 - Only save logs for the current world
  * TODO: P1 - Input/output filtering
  * DONE: P3 - Text selection
- * TODO: p2 - Text selection in the chat-history field
+ * TODO: p2 - Text selection in the chat-history field (copy text)
+ * TODO: p2 - Ctl + x (cut highlighted section)
  * TODO: P2 - Spinner (tab auto complete)
  * TODO: P3 - Drop down menus
  * TODO: P2 - Improve look and feel
