@@ -4,7 +4,6 @@ import com.sijobe.console.GuiConsole;
 
 import org.lwjgl.input.Keyboard;
 import net.minecraft.client.Minecraft;
-import com.sijobe.console.GuiConsole;
 
 public class mod_Console extends BaseMod {
    public mod_Console() {
