@@ -28,34 +28,39 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 /**
- * TODO: P1 - Only save logs for the current world
- * TODO: P1 - Input/output filtering
- * DONE: P3 - Text selection
- * TODO: p2 - Text selection in the chat-history field (copy text)
- * TODO: p2 - Ctl + x (cut highlighted section)
- * TODO: P2 - Spinner (tab auto complete)
- * TODO: P3 - Drop down menus
- * TODO: P2 - Improve look and feel
- * DONE: P1 - Username autocomplete (servers)
+ * @formatter:off
+ *                TODO: P1 - Only save logs for the current world
+ *                TODO: P1 - Output filtering - allow blocking of certain text/people
+ *                DONE: P3 - Text selection
+ *                TODO: p2 - Text selection in the chat-history field (copy text)
+ *                TODO: p2 - Ctrl + x (cut highlighted section)
+ *                TODO: P2 - Spinner (tab auto complete)
+ *                TODO: P3 - Drop down menus
+ *                TODO: P2 - Improve look and feel
+ *                TODO: P2 - Custom text color support. Holding CTRL then type a number will set the text to that color [0-f] - (0-15)
+ *                TODO: P1 - Add ability to disable settings loader (in code) and ability to reset the settings ingame
+ *                TODO: P2 - Configure any setting in an easy to use command [@set setting_name(non case-sensitive) value] and [@get setting_name(non case-sensitive)]
+ *                TODO: P3 - Dynamic settings screen, configure any setting in an easy to use GUI
  * 
  * @author simo_415
  * 
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Lesser General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *  
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *  
- *  You should have received a copy of the GNU General Public License
- *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *  
+ *         This program is free software: you can redistribute it and/or modify
+ *         it under the terms of the GNU Lesser General Public License as published by
+ *         the Free Software Foundation, either version 3 of the License, or
+ *         (at your option) any later version.
+ * 
+ *         This program is distributed in the hope that it will be useful,
+ *         but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *         GNU Lesser General Public License for more details.
+ * 
+ *         You should have received a copy of the GNU General Public License
+ *         along with this program. If not, see <http://www.gnu.org/licenses/>.
+ * @formatter:on
  */
 public class GuiConsole extends GuiScreen implements Runnable {
 
+   /* @formatter:off */
    protected String message;                                         // The current user input
    private int updateCounter;                                        // The tick count - used for cursor blink rate
    private int slider;                                               // Position of the scroll bar
@@ -125,11 +130,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
    public static final int LOGGING_OUTPUT = 1;                       // Logging level - Output
    private static int LOGGING = LOGGING_INPUT + LOGGING_OUTPUT;      // What is currently being logged
    private static long LOG_WRITE_INTERVAL = 1000L;                   // How often (in ms) the logs are written to file
-   // The log line separator
+                                                                     // The log line separator
    private static String LINE_BREAK = System.getProperty("line.separator");
 
    private static String DATE_FORMAT_LOG = "yyyy-MM-dd hh:mm:ss: ";  // The date format according to SimpleDateFormat
-   // The date format filename (uses SimpleDateFormat)
+                                                                     // The date format filename (uses SimpleDateFormat)
    private static String DATE_FORMAT_FILENAME = "yyyyMMdd_hhmmss'.log'";
 
    private static int OUTPUT_MAX = 200;                              // Maximum number of lines in the output
@@ -165,16 +170,17 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static File LOG_DIR;                                      // Log directory
 
    private static GuiConsole INSTANCE;                               // Instance of the class for singleton pattern
+   /* @formatter:on */
 
    /**
     * Initialises all of the instance variables
     */
    static {
-      if ((new File(MOD_DIR,"gui.properties")).exists()) {
-         readSettings(GuiConsole.class, new File(MOD_DIR,"gui.properties"));
+      if ((new File(MOD_DIR, "gui.properties")).exists()) {
+         readSettings(GuiConsole.class, new File(MOD_DIR, "gui.properties"));
       }
-      writeSettings(GuiConsole.class, new File(MOD_DIR,"gui.properties"));
-      LOG_DIR = new File(Minecraft.getMinecraftDir(),LOG_PATH);
+      writeSettings(GuiConsole.class, new File(MOD_DIR, "gui.properties"));
+      LOG_DIR = new File(Minecraft.getMinecraftDir(), LOG_PATH);
       ALLOWED_CHARACTERS = ChatAllowedCharacters.allowedCharacters;
       MESSAGES = new Vector<String>();
       MESSAGES.add("\2476Minecraft Console version " + VERSION + " written by simo_415");
@@ -190,12 +196,14 @@ public class GuiConsole extends GuiScreen implements Runnable {
       if (!MOD_DIR.exists()) {
          try {
             MOD_DIR.mkdirs();
-         } catch (Exception e) {}
+         } catch (Exception e) {
+         }
       }
       if (!LOG_DIR.exists()) {
          try {
             LOG_DIR.mkdirs();
-         } catch (Exception e) {}
+         } catch (Exception e) {
+         }
       }
       IN_GAME_GUI_TEMP = new Vector<Object>();
    }
@@ -210,6 +218,13 @@ public class GuiConsole extends GuiScreen implements Runnable {
       sdf = new SimpleDateFormat(DATE_FORMAT_LOG);
       keyBindings = generateKeyBindings();
       keyDown = new Vector<Integer>();
+   }
+
+   /**
+    * Loads the core set of classes which handle player input/output.
+    */
+   private void loadCoreCommands() {
+      ;
    }
 
    /**
@@ -229,17 +244,18 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * 
     * @return A hashmap containing all the keybindings
     */
-   public HashMap<String,String> generateKeyBindings() {
+   public HashMap<String, String> generateKeyBindings() {
       Properties p = new Properties();
-      HashMap<String,String> bindings = new HashMap<String,String>();
+      HashMap<String, String> bindings = new HashMap<String, String>();
       try {
-         p.load(new FileInputStream(new File(MOD_DIR,"bindings.properties")));
+         p.load(new FileInputStream(new File(MOD_DIR, "bindings.properties")));
          Iterator i = p.keySet().iterator();
          while (i.hasNext()) {
-            String o = (String)i.next();
-            bindings.put(o,(String)p.get(o));
+            String o = (String) i.next();
+            bindings.put(o, (String) p.get(o));
          }
-      } catch (Exception e) {}
+      } catch (Exception e) {
+      }
       return bindings;
    }
 
@@ -260,7 +276,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                f.setAccessible(true);
                Object o = f.get(mc.ingameGUI);
                if (o instanceof List) {
-                  IN_GAME_GUI = (List<?>)o;
+                  IN_GAME_GUI = (List<?>) o;
                   return true;
                }
             }
@@ -336,8 +352,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
             }
          }
       }*/
-      int chars = (int)((MESSAGE_MAXX - MESSAGE_MINX) / CHARWIDTH);
-      String parts[] = message.split("(?<=\\G.{"+(chars)+"})");
+      int chars = (int) ((MESSAGE_MAXX - MESSAGE_MINX) / CHARWIDTH);
+      String parts[] = message.split("(?<=\\G.{" + (chars) + "})");
       for (int i = 0; i < parts.length; i++) {
          LINES.add(parts[i]);
       }
@@ -368,11 +384,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
       try {
          if (getInGameGuiList()) {
             for (Object message : IN_GAME_GUI) {
-               IN_GAME_GUI_TEMP.add(0,message);
+               IN_GAME_GUI_TEMP.add(0, message);
             }
             IN_GAME_GUI.clear();
          }
-      } catch (Exception e) {}
+      } catch (Exception e) {
+      }
    }
 
    /**
@@ -389,11 +406,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
       try {
          if (!isGuiOpen) {
             for (Object message : IN_GAME_GUI_TEMP) {
-               IN_GAME_GUI.add(0,message);
+               IN_GAME_GUI.add(0, message);
             }
             IN_GAME_GUI_TEMP.clear();
          }
-      } catch (Exception e) {}
+      } catch (Exception e) {
+      }
    }
 
    /**
@@ -414,7 +432,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
             }
             IN_GAME_GUI.clear();
          }
-      } catch (Exception e) {}
+      } catch (Exception e) {
+      }
    }
 
    /**
@@ -428,45 +447,45 @@ public class GuiConsole extends GuiScreen implements Runnable {
       // Control + ?
       if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {
          if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
-         	if (lastHighlighting == initialHighlighting) {
-         		setClipboardString(message);
-         	} else {
-         		if(initialHighlighting < lastHighlighting)
-         			setClipboardString(message.substring(initialHighlighting, lastHighlighting));
-         		else
-         			setClipboardString(message.substring(lastHighlighting, initialHighlighting));
-         	}
+            if (lastHighlighting == initialHighlighting) {
+               setClipboardString(message);
+            } else {
+               if (initialHighlighting < lastHighlighting)
+                  setClipboardString(message.substring(initialHighlighting, lastHighlighting));
+               else
+                  setClipboardString(message.substring(lastHighlighting, initialHighlighting));
+            }
          } else if (Keyboard.isKeyDown(Keyboard.KEY_V)) {
             String clipboard = getClipboardString();
             if (clipboard != null) {
-            	if(lastHighlighting == initialHighlighting){
-	               String start = "";
-	               String end = "";
-	               if (message != null && message.length() > 0) {
-	                  start = message.substring(0,cursor);
-	                  end = message.substring(cursor);
-	               }
-	               int limit = INPUT_MAX - message.length();
-	               if (limit < clipboard.length()) {
-	                  clipboard = clipboard.substring(0,limit);
-	               }
-	               message = start + clipboard + end;
-	               cursor = (start + clipboard).length() + 1;
-            	} else {
-            		String start, end;
-               	if (initialHighlighting < lastHighlighting) {
-               		start = message.substring(0, initialHighlighting);
-               		end = message.substring(lastHighlighting);
-               	} else {
-               		start = message.substring(0, lastHighlighting);
-               		end = message.substring(initialHighlighting);
-               	}
-               	
-               	message = start + clipboard + end;
-               	cursor = (start + clipboard).length() + 1;
-               	initialHighlighting = 0;
-               	lastHighlighting = 0;
-            	}
+               if (lastHighlighting == initialHighlighting) {
+                  String start = "";
+                  String end = "";
+                  if (message != null && message.length() > 0) {
+                     start = message.substring(0, cursor);
+                     end = message.substring(cursor);
+                  }
+                  int limit = INPUT_MAX - message.length();
+                  if (limit < clipboard.length()) {
+                     clipboard = clipboard.substring(0, limit);
+                  }
+                  message = start + clipboard + end;
+                  cursor = (start + clipboard).length() + 1;
+               } else {
+                  String start, end;
+                  if (initialHighlighting < lastHighlighting) {
+                     start = message.substring(0, initialHighlighting);
+                     end = message.substring(lastHighlighting);
+                  } else {
+                     start = message.substring(0, lastHighlighting);
+                     end = message.substring(initialHighlighting);
+                  }
+
+                  message = start + clipboard + end;
+                  cursor = (start + clipboard).length() + 1;
+                  initialHighlighting = 0;
+                  lastHighlighting = 0;
+               }
             }
          }
          return;
@@ -492,7 +511,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                if (isMultiplayerMode()) { // Verifies that each line doesnt pass the maximum server length
                   for (int i = 0; i <= s.length() / INPUT_SERVER_MAX; i++) {
                      int end = (i + 1) * INPUT_SERVER_MAX > s.length() ? s.length() : (i + 1) * INPUT_SERVER_MAX;
-                     mc.thePlayer.sendChatMessage(s.substring(i*INPUT_SERVER_MAX,end));
+                     mc.thePlayer.sendChatMessage(s.substring(i * INPUT_SERVER_MAX, end));
                   }
                } else {
                   mc.thePlayer.sendChatMessage(s);
@@ -507,9 +526,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
                inputOffset = 0;
                historyPosition = 0;
             }
-            
+
             initialHighlighting = 0;
-         	lastHighlighting = 0;
+            lastHighlighting = 0;
             break;
 
          case Keyboard.KEY_LEFT:
@@ -527,7 +546,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             message = getInputHistory(--historyPosition);
             cursor = message.length();
             initialHighlighting = 0;
-         	lastHighlighting = 0;
+            lastHighlighting = 0;
             break;
 
          case Keyboard.KEY_UP:
@@ -535,29 +554,29 @@ public class GuiConsole extends GuiScreen implements Runnable {
             message = getInputHistory(++historyPosition);
             cursor = message.length();
             initialHighlighting = 0;
-         	lastHighlighting = 0;
+            lastHighlighting = 0;
             break;
 
          case Keyboard.KEY_DELETE:
             // Delete
             if (message.length() > 0) {
-               if(initialHighlighting == lastHighlighting){
-               	validateCursor();
-	               String start = message.substring(0,cursor);
-	               String end = message.substring(cursor,message.length());
-	               this.message = start + (end.length() > 0 ? end.substring(1) : end);
+               if (initialHighlighting == lastHighlighting) {
+                  validateCursor();
+                  String start = message.substring(0, cursor);
+                  String end = message.substring(cursor, message.length());
+                  this.message = start + (end.length() > 0 ? end.substring(1) : end);
                } else {
-               	String start, end;
-               	if(initialHighlighting < lastHighlighting){
-               		start = message.substring(0, initialHighlighting);
-               		end = message.substring(lastHighlighting);
-               	}else{
-               		start = message.substring(0, lastHighlighting);
-               		end = message.substring(initialHighlighting);
-               	}
-               	message = start + end;
-               	initialHighlighting = 0;
-               	lastHighlighting = 0;
+                  String start, end;
+                  if (initialHighlighting < lastHighlighting) {
+                     start = message.substring(0, initialHighlighting);
+                     end = message.substring(lastHighlighting);
+                  } else {
+                     start = message.substring(0, lastHighlighting);
+                     end = message.substring(initialHighlighting);
+                  }
+                  message = start + end;
+                  initialHighlighting = 0;
+                  lastHighlighting = 0;
                }
             }
             break;
@@ -568,12 +587,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
                String str = message;
                if (tabPosition != 0) {
                   str = tabWord;
-                  if(tabPosition < 0){
+                  if (tabPosition < 0) {
                      tabPosition = 0;
                   }
                } else if (message.contains(" ")) {
                   // Gets the last word in input
-                  str = message.substring(message.lastIndexOf(" ") + 1,message.length());
+                  str = message.substring(message.lastIndexOf(" ") + 1, message.length());
                }
                boolean matched = false;
                List<String> matches = new ArrayList<String>();
@@ -598,8 +617,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   // Sets the cursor to the end of the input
                   cursor = message.length();
                   tabPosition++;
-                  if(tabPosition >= numMatches){
-                     tabPosition=-1;
+                  if (tabPosition >= numMatches) {
+                     tabPosition = -1;
                   }
                }
             }
@@ -608,53 +627,53 @@ public class GuiConsole extends GuiScreen implements Runnable {
          case Keyboard.KEY_BACK:
             // Backspace
             if (message.length() > 0) {
-            	if (initialHighlighting == lastHighlighting) {
-	               validateCursor();
-	               String start = message.substring(0,cursor);
-	               String end = message.substring(cursor,message.length());
-	               this.message = start.substring(0,(start.length() - 1 > -1 ? start.length() - 1 : 0)) + end;
-	               cursor--;
-	               inputOffset--;
-	            } else {
-	            	String start, end;
-	            	if (initialHighlighting < lastHighlighting) {
-	            		start = message.substring(0, initialHighlighting);
-	            		end = message.substring(lastHighlighting);
-	            	} else {
-	            		start = message.substring(0, lastHighlighting);
-	            		end = message.substring(initialHighlighting);
-	            	}
-	            	message = start + end;
-	            	initialHighlighting = 0;
-	            	lastHighlighting = 0;
-	            }
+               if (initialHighlighting == lastHighlighting) {
+                  validateCursor();
+                  String start = message.substring(0, cursor);
+                  String end = message.substring(cursor, message.length());
+                  this.message = start.substring(0, (start.length() - 1 > -1 ? start.length() - 1 : 0)) + end;
+                  cursor--;
+                  inputOffset--;
+               } else {
+                  String start, end;
+                  if (initialHighlighting < lastHighlighting) {
+                     start = message.substring(0, initialHighlighting);
+                     end = message.substring(lastHighlighting);
+                  } else {
+                     start = message.substring(0, lastHighlighting);
+                     end = message.substring(initialHighlighting);
+                  }
+                  message = start + end;
+                  initialHighlighting = 0;
+                  lastHighlighting = 0;
+               }
             }
             break;
 
          default:
             // Verifies that the character is in the character set before adding 
-            if(ALLOWED_CHARACTERS.indexOf(key) >= 0 && this.message.length() < INPUT_MAX) { 
-            	if (initialHighlighting == lastHighlighting) {
-	               validateCursor();
-	               String start = message.substring(0,cursor);
-	               String end = message.substring(cursor,message.length());
-	               this.message = start + key + end;
-	               cursor++;
-	            } else {
-	            	String start, end;
-	            	if(initialHighlighting < lastHighlighting){
-	            		start = message.substring(0, initialHighlighting);
-	            		end = message.substring(lastHighlighting);
-	            	}else{
-	            		start = message.substring(0, lastHighlighting);
-	            		end = message.substring(initialHighlighting);
-	            	}
-	            	
-	            	message = start + key + end;
-	            	cursor = start.length() + 1;
-	            	initialHighlighting = 0;
-	            	lastHighlighting = 0;
-	            }
+            if (ALLOWED_CHARACTERS.indexOf(key) >= 0 && this.message.length() < INPUT_MAX) {
+               if (initialHighlighting == lastHighlighting) {
+                  validateCursor();
+                  String start = message.substring(0, cursor);
+                  String end = message.substring(cursor, message.length());
+                  this.message = start + key + end;
+                  cursor++;
+               } else {
+                  String start, end;
+                  if (initialHighlighting < lastHighlighting) {
+                     start = message.substring(0, initialHighlighting);
+                     end = message.substring(lastHighlighting);
+                  } else {
+                     start = message.substring(0, lastHighlighting);
+                     end = message.substring(initialHighlighting);
+                  }
+
+                  message = start + key + end;
+                  cursor = start.length() + 1;
+                  initialHighlighting = 0;
+                  lastHighlighting = 0;
+               }
             }
       }
    }
@@ -662,8 +681,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
    /**
     * Returns true if the current game is being player on a server
     * 
-    * @return True is returned when the current game is being played on a 
-    * Minecraft server
+    * @return True is returned when the current game is being played on a
+    *         Minecraft server
     */
    public boolean isMultiplayerMode() {
       return mc.isMultiplayerWorld();
@@ -678,9 +697,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
       List<String> names;
       if (isMultiplayerMode() && mc.thePlayer instanceof EntityClientPlayerMP) {
          names = new ArrayList<String>();
-         NetClientHandler netclienthandler = ((EntityClientPlayerMP)mc.thePlayer).sendQueue;
+         NetClientHandler netclienthandler = ((EntityClientPlayerMP) mc.thePlayer).sendQueue;
          List<GuiSavingLevelString> tempList = netclienthandler.playerNames;
-         for (GuiSavingLevelString string: tempList) {
+         for (GuiSavingLevelString string : tempList) {
             names.add(string.name);
          }
       } else {
@@ -690,7 +709,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    }
 
    /**
-    * Cleans a dirty string of any invalid characters then returns the clean 
+    * Cleans a dirty string of any invalid characters then returns the clean
     * string to the user. Verifies that the string doesn't go beyond the maximum
     * length as well
     * 
@@ -709,13 +728,13 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
       }
       if (clean.length() >= INPUT_MAX) {
-         clean = clean.substring(0,INPUT_MAX - 1);
+         clean = clean.substring(0, INPUT_MAX - 1);
       }
       return clean;
    }
 
    /**
-    * Gets the String on the system clip board, if it exists. Otherwise null is 
+    * Gets the String on the system clip board, if it exists. Otherwise null is
     * returned
     * 
     * @return Returns the String on the clip board
@@ -724,9 +743,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
       try {
          Transferable t = Toolkit.getDefaultToolkit().getSystemClipboard().getContents(null);
          if (t != null && t.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-            return cleanString((String)t.getTransferData(DataFlavor.stringFlavor));
+            return cleanString((String) t.getTransferData(DataFlavor.stringFlavor));
          }
-      } catch (Exception e) {}
+      } catch (Exception e) {
+      }
       return null;
    }
 
@@ -738,11 +758,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
    public static void setClipboardString(String str) {
       try {
          Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(str), null);
-      } catch (Exception e) {}
+      } catch (Exception e) {
+      }
    }
 
    /**
-    * Command history implementation, sets the historyPosition pointer to 
+    * Command history implementation, sets the historyPosition pointer to
     * position based on its validity. The validity is verified by the method
     * and the pointer is kept between the bounds of the history
     * 
@@ -782,55 +803,54 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * @see net.minecraft.src.GuiScreen#drawScreen(int, int, float)
     */
    @Override
-   public void drawScreen(int mousex, int mousey, float f)
-   {  
+   public void drawScreen(int mousex, int mousey, float f) {
       // Background
       int minx = SCREEN_PADDING_LEFT;
       int miny = SCREEN_PADDING_TOP;
-      int maxx = width-SCREEN_PADDING_RIGHT;
-      int maxy = height-SCREEN_PADDING_BOTTOM;
-      drawRect(minx,miny,maxx,maxy, COLOR_BASE);
+      int maxx = width - SCREEN_PADDING_RIGHT;
+      int maxy = height - SCREEN_PADDING_BOTTOM;
+      drawRect(minx, miny, maxx, maxy, COLOR_BASE);
 
       // Input Text box
-      int textbox_minx = minx+BORDERSIZE;
-      int textbox_maxx = maxx-BORDERSIZE;
-      int textbox_miny = maxy-CHARHEIGHT-BORDERSIZE;
-      int textbox_maxy = maxy-BORDERSIZE;
-      drawRect(textbox_minx,textbox_miny,textbox_maxx,textbox_maxy,COLOR_INPUT_BACKGROUND);
-      TEXT_BOX = new int[]{textbox_minx ,textbox_miny, textbox_maxx, textbox_maxy};
-      
+      int textbox_minx = minx + BORDERSIZE;
+      int textbox_maxx = maxx - BORDERSIZE;
+      int textbox_miny = maxy - CHARHEIGHT - BORDERSIZE;
+      int textbox_maxy = maxy - BORDERSIZE;
+      drawRect(textbox_minx, textbox_miny, textbox_maxx, textbox_maxy, COLOR_INPUT_BACKGROUND);
+      TEXT_BOX = new int[] { textbox_minx, textbox_miny, textbox_maxx, textbox_maxy };
+
       // Input text highlighting
       if (lastHighlighting != initialHighlighting) {
-      	int firstH, lastH; //First letter position, last letter position
-      	if (initialHighlighting < lastHighlighting) {
-      		firstH = initialHighlighting;
-      		lastH = lastHighlighting;
-      	} else {
-      		firstH = lastHighlighting;
-      		lastH = initialHighlighting;
-      	}
-      	if (firstH < 0) {
-      	   firstH = 0;
-      	}
-      	if (lastH > message.length()) {
-      	   lastH = message.length();
-      	}
-      	
-	      int highlighting_minx = 1+TEXT_BOX[0]+fontRenderer.getStringWidth(INPUT_PREFIX)+fontRenderer.getStringWidth(message.substring(0, firstH));
-	      int highlighting_maxx = 1+highlighting_minx + fontRenderer.getStringWidth(message.substring(firstH, lastH));
-	      int highlighting_miny = TEXT_BOX[1];
-	      int highlighting_maxy = highlighting_miny + CHARHEIGHT;
-	      if (cursor > firstH && cursor < lastH)
-	      	highlighting_maxx += fontRenderer.getStringWidth("!");
-	      else if (cursor <= firstH) {
-	      	highlighting_minx += fontRenderer.getStringWidth("!");
-	      	highlighting_maxx += fontRenderer.getStringWidth("!");
-	      }
-	      drawRect(highlighting_minx,highlighting_miny,highlighting_maxx,highlighting_maxy,COLOR_TEXT_HIGHLIGHT);
+         int firstH, lastH; //First letter position, last letter position
+         if (initialHighlighting < lastHighlighting) {
+            firstH = initialHighlighting;
+            lastH = lastHighlighting;
+         } else {
+            firstH = lastHighlighting;
+            lastH = initialHighlighting;
+         }
+         if (firstH < 0) {
+            firstH = 0;
+         }
+         if (lastH > message.length()) {
+            lastH = message.length();
+         }
+
+         int highlighting_minx = 1 + TEXT_BOX[0] + fontRenderer.getStringWidth(INPUT_PREFIX) + fontRenderer.getStringWidth(message.substring(0, firstH));
+         int highlighting_maxx = 1 + highlighting_minx + fontRenderer.getStringWidth(message.substring(firstH, lastH));
+         int highlighting_miny = TEXT_BOX[1];
+         int highlighting_maxy = highlighting_miny + CHARHEIGHT;
+         if (cursor > firstH && cursor < lastH)
+            highlighting_maxx += fontRenderer.getStringWidth("!");
+         else if (cursor <= firstH) {
+            highlighting_minx += fontRenderer.getStringWidth("!");
+            highlighting_maxx += fontRenderer.getStringWidth("!");
+         }
+         drawRect(highlighting_minx, highlighting_miny, highlighting_maxx, highlighting_maxy, COLOR_TEXT_HIGHLIGHT);
       }
-      
+
       // Past messages - dialog
-      int message_miny = miny+BORDERSIZE;
+      int message_miny = miny + BORDERSIZE;
       int message_maxy = textbox_miny - BORDERSIZE;
       if (textbox_minx != MESSAGE_MINX || MESSAGE_MAXX != maxx - (BORDERSIZE * 2) - 10) {
          MESSAGE_MINX = textbox_minx;
@@ -842,7 +862,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          buildLines();
       }
 
-      drawRect(MESSAGE_MINX,message_miny,MESSAGE_MAXX,message_maxy,COLOR_OUTPUT_BACKGROUND);
+      drawRect(MESSAGE_MINX, message_miny, MESSAGE_MAXX, message_maxy, COLOR_OUTPUT_BACKGROUND);
 
       // Past messages - text
       int max = (message_maxy - message_miny) / CHARHEIGHT;
@@ -850,13 +870,15 @@ public class GuiConsole extends GuiScreen implements Runnable {
          slider = LINES.size() - slider > max ? (LINES.size() - slider < LINES.size() ? slider : 0) : LINES.size() - max;
       }
 
-      if (slider < 0) slider = 0;
+      if (slider < 0)
+         slider = 0;
 
       int oversize = 0;
       for (int i = 0; i + oversize < LINES.size() && i + oversize < max; i++) {
          int element = LINES.size() - 1 - i - slider;
-         if (LINES.size() <= element) continue;
-         fontRenderer.drawString(LINES.elementAt(element),MESSAGE_MINX + BORDERSIZE,textbox_miny - CHARHEIGHT - BORDERSIZE - ((i + oversize) * 10),COLOR_TEXT_OUTPUT);
+         if (LINES.size() <= element)
+            continue;
+         fontRenderer.drawString(LINES.elementAt(element), MESSAGE_MINX + BORDERSIZE, textbox_miny - CHARHEIGHT - BORDERSIZE - ((i + oversize) * 10), COLOR_TEXT_OUTPUT);
       }
 
       // Scroll - background
@@ -864,16 +886,16 @@ public class GuiConsole extends GuiScreen implements Runnable {
       int scroll_maxx = textbox_maxx;
       int scroll_miny = message_miny;
       int scroll_maxy = textbox_miny - BORDERSIZE;
-      drawRect(scroll_minx, scroll_miny,scroll_maxx,scroll_maxy,COLOR_SCROLL_BACKGROUND);
+      drawRect(scroll_minx, scroll_miny, scroll_maxx, scroll_maxy, COLOR_SCROLL_BACKGROUND);
 
       // Scroll - button top
-      drawRect(scroll_minx + 1, scroll_miny + 1,scroll_maxx - 1,scroll_miny + 9,COLOR_SCROLL_FOREGROUND);
-      TOP = new int[] {scroll_minx + 1, scroll_miny + 1,scroll_maxx - 1,scroll_miny + 9};
+      drawRect(scroll_minx + 1, scroll_miny + 1, scroll_maxx - 1, scroll_miny + 9, COLOR_SCROLL_FOREGROUND);
+      TOP = new int[] { scroll_minx + 1, scroll_miny + 1, scroll_maxx - 1, scroll_miny + 9 };
       drawString(this.mc.fontRenderer, "^", TOP[0] + 2, TOP[1] + 2, COLOR_SCROLL_ARROW);
 
       // Scroll - button bottom
-      drawRect(scroll_minx + 1, scroll_maxy - 9,scroll_maxx - 1,scroll_maxy - 1,COLOR_SCROLL_FOREGROUND);
-      BOTTOM = new int[] {scroll_minx + 1, scroll_maxy - 9,scroll_maxx - 1,scroll_maxy - 1};
+      drawRect(scroll_minx + 1, scroll_maxy - 9, scroll_maxx - 1, scroll_maxy - 1, COLOR_SCROLL_FOREGROUND);
+      BOTTOM = new int[] { scroll_minx + 1, scroll_maxy - 9, scroll_maxx - 1, scroll_maxy - 1 };
       drawStringFlipped(this.mc.fontRenderer, "^", BOTTOM[0] + 1, BOTTOM[1] - 3, COLOR_SCROLL_ARROW, true);
 
       // Scroll - bar           
@@ -882,24 +904,24 @@ public class GuiConsole extends GuiScreen implements Runnable {
       int scrollable_miny = scroll_miny + 11;
       int scrollable_maxy = scroll_maxy - 10;
       sliderHeight = scrollable_maxy - scrollable_miny;
-      double heightpercentage = (double)max / (double)LINES.size();
+      double heightpercentage = (double) max / (double) LINES.size();
       double barheight = (sliderHeight) * heightpercentage;
       barheight = barheight < 5 ? 5 : barheight;
-      double stepsize = (sliderHeight - barheight) / (double)(LINES.size() - max);
+      double stepsize = (sliderHeight - barheight) / (double) (LINES.size() - max);
       double position = slider * stepsize;
 
       if (LINES.size() < max) {
-         drawRect(scrollable_minx,scrollable_miny,scrollable_maxx,scrollable_maxy,COLOR_SCROLL_FOREGROUND);
-         BAR = new int[] {scrollable_minx,scrollable_miny,scrollable_maxx,scrollable_maxy};
+         drawRect(scrollable_minx, scrollable_miny, scrollable_maxx, scrollable_maxy, COLOR_SCROLL_FOREGROUND);
+         BAR = new int[] { scrollable_minx, scrollable_miny, scrollable_maxx, scrollable_maxy };
       } else {
-         drawRect(scrollable_minx, (int)(scrollable_maxy-position-barheight),scrollable_maxx,(int)(scrollable_maxy-position),COLOR_SCROLL_FOREGROUND);
-         BAR = new int[] {scrollable_minx, (int)(scrollable_maxy-position-barheight),scrollable_maxx,(int)(scrollable_maxy-position)};
+         drawRect(scrollable_minx, (int) (scrollable_maxy - position - barheight), scrollable_maxx, (int) (scrollable_maxy - position), COLOR_SCROLL_FOREGROUND);
+         BAR = new int[] { scrollable_minx, (int) (scrollable_maxy - position - barheight), scrollable_maxx, (int) (scrollable_maxy - position) };
       }
 
       // Input
       validateCursor();
-      String start = message.substring(0,cursor);
-      String end = message.substring(cursor,message.length());
+      String start = message.substring(0, cursor);
+      String end = message.substring(cursor, message.length());
       String input = INPUT_PREFIX + start + ((updateCounter / 8) % 2 != 0 ? "." : "!") + end;
       int upperbound = input.length();
       // Sets the text to render based off where the cursor is currently positioned
@@ -916,26 +938,27 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
          while (cursor < inputOffset && inputOffset > 0) {
             inputOffset--;
-            while (fontRenderer.getStringWidth(input.substring(inputOffset,upperbound)) >= (textbox_maxx - textbox_minx)) {
+            while (fontRenderer.getStringWidth(input.substring(inputOffset, upperbound)) >= (textbox_maxx - textbox_minx)) {
                upperbound--;
             }
          }
-         if (upperbound > input.length()) upperbound = input.length();
-         input = input.substring(inputOffset,upperbound);
+         if (upperbound > input.length())
+            upperbound = input.length();
+         input = input.substring(inputOffset, upperbound);
       }
-      fontRenderer.drawString(input,textbox_minx + BORDERSIZE,textbox_miny + 1,COLOR_INPUT_TEXT);
+      fontRenderer.drawString(input, textbox_minx + BORDERSIZE, textbox_miny + 1, COLOR_INPUT_TEXT);
 
       // Titlebar
       drawRect(maxx / 2, 0, maxx, miny, COLOR_BASE);
 
       // Title
-      fontRenderer.drawString(TITLE, (maxx / 2) + BORDERSIZE,BORDERSIZE,COLOR_TEXT_TITLE);
+      fontRenderer.drawString(TITLE, (maxx / 2) + BORDERSIZE, BORDERSIZE, COLOR_TEXT_TITLE);
 
       // Exit button
       drawRect(maxx - BORDERSIZE - 10, BORDERSIZE, maxx - BORDERSIZE, miny, COLOR_EXIT_BUTTON);
-      fontRenderer.drawString("X",maxx-BORDERSIZE-7,BORDERSIZE+2,COLOR_EXIT_BUTTON_TEXT);
-      EXIT = new int[] {maxx - BORDERSIZE - 10, BORDERSIZE, maxx - BORDERSIZE, miny};
-      
+      fontRenderer.drawString("X", maxx - BORDERSIZE - 7, BORDERSIZE + 2, COLOR_EXIT_BUTTON_TEXT);
+      EXIT = new int[] { maxx - BORDERSIZE - 10, BORDERSIZE, maxx - BORDERSIZE, miny };
+
       super.drawScreen(mousex, mousey, f);
    }
 
@@ -953,7 +976,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       GL11.glPushMatrix();
       GL11.glScalef(-1F, -1F, 1F);
       GL11.glTranslatef((-i * 2) - fontrenderer.getStringWidth(s), (-j * 2) - fontrenderer.FONT_HEIGHT, 0.0F);
-      if(flag) {
+      if (flag) {
          fontrenderer.drawString(s, i - 1, j - 1, (k & 0xfcfcfc) >> 2 | k & 0xff000000); //Took the last argument from FrontRenderer.renderString() because it's private and I want the shadow on the correct side when flipped 
       }
       fontrenderer.drawString(s, i, j, k);
@@ -967,39 +990,39 @@ public class GuiConsole extends GuiScreen implements Runnable {
     */
    @Override
    protected void mouseClicked(int mousex, int mousey, int button) {
-      if(button == 0) {
+      if (button == 0) {
          // Bad implementation which checks for clicks on exit button
          if (hitTest(mousex, mousey, EXIT)) {
             mc.displayGuiScreen(null);
             return;
             // Bad implementation which checks for clicks on scrollbar
-         }else if (hitTest(mousex, mousey, TOP))
-         	slider++;
+         } else if (hitTest(mousex, mousey, TOP))
+            slider++;
          else if (hitTest(mousex, mousey, BOTTOM))
-         	slider--;
+            slider--;
          else if (hitTest(mousex, mousey, BAR)) {
             isSliding = true;
             lastSliding = mousey;
             initialSliding = slider;
-         }else if(hitTest(mousex, mousey, TEXT_BOX)){
-         	isHighlighting = true;
-         	int charat = (int) ((mousex-TEXT_BOX[0]-fontRenderer.getStringWidth(INPUT_PREFIX))/CHARWIDTH);
-         	if(message.length() < charat)
-         		initialHighlighting = message.length();
-         	else
-         		initialHighlighting = charat;
-         	lastHighlighting = initialHighlighting;
-         	
+         } else if (hitTest(mousex, mousey, TEXT_BOX)) {
+            isHighlighting = true;
+            int charat = (int) ((mousex - TEXT_BOX[0] - fontRenderer.getStringWidth(INPUT_PREFIX)) / CHARWIDTH);
+            if (message.length() < charat)
+               initialHighlighting = message.length();
+            else
+               initialHighlighting = charat;
+            lastHighlighting = initialHighlighting;
+
          }
 
-         if(this.mc.ingameGUI.field_933_a != null) {
-            if(this.message.length() > 0 && !this.message.endsWith(" ")) {
+         if (this.mc.ingameGUI.field_933_a != null) {
+            if (this.message.length() > 0 && !this.message.endsWith(" ")) {
                this.message = this.message + " ";
             }
 
             this.message = this.message + this.mc.ingameGUI.field_933_a;
             byte var4 = 100;
-            if(this.message.length() > var4) {
+            if (this.message.length() > var4) {
                this.message = this.message.substring(0, var4);
             }
          } else {
@@ -1007,7 +1030,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
       }
    }
-   
+
    /**
     * Tests whether the (x, y) coordinate is within the rectangle or not
     * 
@@ -1016,12 +1039,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * @param rect integer array in the form of {x, y, width, height}
     * @return true if point is in rect false if point is not in rect
     */
-   
-   public boolean hitTest(int x, int y, int[] rect){
-   	if(x >= rect[0] && x <= rect[2] && y >= rect[1] && y <= rect[3])
-   		return true;
-   	else
-   		return false;
+
+   public boolean hitTest(int x, int y, int[] rect) {
+      if (x >= rect[0] && x <= rect[2] && y >= rect[1] && y <= rect[3])
+         return true;
+      else
+         return false;
    }
 
    /**
@@ -1041,7 +1064,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          if (Mouse.isButtonDown(0)) {
             int diff = lastSliding - mousey;
             if (diff != 0) {
-               slider = initialSliding + (int)((diff / (double)sliderHeight) * (LINES.size()));
+               slider = initialSliding + (int) ((diff / (double) sliderHeight) * (LINES.size()));
             }
          } else {
             isSliding = false;
@@ -1049,18 +1072,18 @@ public class GuiConsole extends GuiScreen implements Runnable {
             initialSliding = 0;
          }
       } else if (isHighlighting) {
-      	int charat = (int) ((mousex-TEXT_BOX[0]-fontRenderer.getStringWidth(INPUT_PREFIX))/CHARWIDTH);
-      	if (message.length() < charat) {
-      		lastHighlighting = message.length();
-      	} else {
-      		lastHighlighting = charat;
-      	}
-      	if (!Mouse.isButtonDown(0)) {
-      		isHighlighting = false;
-      		if (lastHighlighting == initialHighlighting) {
-      			cursor = initialHighlighting;
-      		}
-      	}
+         int charat = (int) ((mousex - TEXT_BOX[0] - fontRenderer.getStringWidth(INPUT_PREFIX)) / CHARWIDTH);
+         if (message.length() < charat) {
+            lastHighlighting = message.length();
+         } else {
+            lastHighlighting = charat;
+         }
+         if (!Mouse.isButtonDown(0)) {
+            isHighlighting = false;
+            if (lastHighlighting == initialHighlighting) {
+               cursor = initialHighlighting;
+            }
+         }
       }
    }
 
@@ -1074,7 +1097,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    }
 
    /**
-    * Adds a console listener to the console. When events are triggered they 
+    * Adds a console listener to the console. When events are triggered they
     * are then sent to all the listeners in the order which they are registered
     * in
     * 
@@ -1125,35 +1148,36 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Grabs to IN GAME GUI list of messages for the console mod. This allows
-    * the mod to display what goes onto the inbuild message line without 
+    * the mod to display what goes onto the inbuild message line without
     * needing to change core classes.
     */
    private void pullGuiList() {
       try {
-         if (getInGameGuiList() && IN_GAME_GUI.size() > 0 && !((ChatLine)IN_GAME_GUI.get(0)).equals(lastOutput)) {
+         if (getInGameGuiList() && IN_GAME_GUI.size() > 0 && !((ChatLine) IN_GAME_GUI.get(0)).equals(lastOutput)) {
             int pointer = 0;
             while (pointer < IN_GAME_GUI.size()) {
-               if (((ChatLine)IN_GAME_GUI.get(pointer)).equals(lastOutput)) {
+               if (((ChatLine) IN_GAME_GUI.get(pointer)).equals(lastOutput)) {
                   break;
                }
                pointer++;
             }
             --pointer;
             for (int i = pointer; i > -1; i--) {
-               addOutputMessage(((ChatLine)IN_GAME_GUI.get(i)).message);
+               addOutputMessage(((ChatLine) IN_GAME_GUI.get(i)).message);
             }
-            lastOutput = (ChatLine)IN_GAME_GUI.get(0);
+            lastOutput = (ChatLine) IN_GAME_GUI.get(0);
          }
-      } catch (Exception e) {}
+      } catch (Exception e) {
+      }
    }
 
    /**
-    * Runs a thread which automatically pulls the chat line into the console 
-    * on a configurable interval, by default 20ms. It uses Object.equals 
+    * Runs a thread which automatically pulls the chat line into the console
+    * on a configurable interval, by default 20ms. It uses Object.equals
     * against the ChatLine object to determine the previous message which was
-    * copied across. 
+    * copied across.
     * 
-    * This method also clears the history and output lists once they reach 
+    * This method also clears the history and output lists once they reach
     * capacity
     * 
     * This method also handles key bindings
@@ -1169,14 +1193,15 @@ public class GuiConsole extends GuiScreen implements Runnable {
             }
             if (lastWrite + LOG_WRITE_INTERVAL < System.currentTimeMillis()) {
                try {
-                  FileOutputStream fos = new FileOutputStream(new File(LOG_DIR,logName),true);
+                  FileOutputStream fos = new FileOutputStream(new File(LOG_DIR, logName), true);
                   while (log.size() > 0) {
                      String line = sdf.format(new Date()) + log.elementAt(0) + LINE_BREAK;
                      fos.write(line.getBytes());
                      log.remove(0);
                   }
                   lastWrite = System.currentTimeMillis();
-               } catch (FileNotFoundException e) {}
+               } catch (FileNotFoundException e) {
+               }
             }
             // Pull across GuiList output
             pullGuiList();
@@ -1232,14 +1257,14 @@ public class GuiConsole extends GuiScreen implements Runnable {
             }
 
             Thread.sleep(POLL_DELAY);
-         } catch (Exception e) { 
+         } catch (Exception e) {
             e.printStackTrace();
          }
       }
    }
 
    /**
-    * Reads the settings from the specified file and sets them to their 
+    * Reads the settings from the specified file and sets them to their
     * applicable variables
     * 
     * @param base - The class to set the settings in
@@ -1247,8 +1272,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
     */
    public static void readSettings(Class<?> base, File settings) {
       Properties p = new Properties();
-		try {
-			p.load(new FileInputStream(settings));
+      try {
+         p.load(new FileInputStream(settings));
          Field[] declaredFields = base.getDeclaredFields();
          for (Field field : declaredFields) {
             if (Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers())) {
@@ -1258,52 +1283,53 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   }
 
                   if (field.getType().equals(String.class)) {
-                     String property = (String)p.get(field.getName());
+                     String property = (String) p.get(field.getName());
                      if (property != null) {
                         field.set(null, property);
                      }
                   } else if (field.getType().equals(Integer.TYPE)) {
-                     String property = (String)p.get(field.getName());
+                     String property = (String) p.get(field.getName());
                      if (property != null) {
                         field.set(null, Integer.decode(property).intValue());
                      }
                   } else if (field.getType().equals(Double.TYPE)) {
-                     String property = (String)p.get(field.getName());
+                     String property = (String) p.get(field.getName());
                      if (property != null) {
                         field.set(null, Double.parseDouble(property));
                      }
                   } else if (field.getType().equals(Boolean.TYPE)) {
-                     String property = (String)p.get(field.getName());
+                     String property = (String) p.get(field.getName());
                      if (property != null) {
                         field.set(null, Boolean.parseBoolean(property));
                      }
                   } else if (field.getType().equals(Long.TYPE)) {
-                     String property = (String)p.get(field.getName());
+                     String property = (String) p.get(field.getName());
                      if (property != null) {
                         field.set(null, Long.decode(property).longValue());
                      }
                   } else if (field.getType().equals(Byte.TYPE)) { // new
-                     String property = (String)p.get(field.getName());
+                     String property = (String) p.get(field.getName());
                      if (property != null) {
                         field.set(null, Byte.parseByte(property));
                      }
                   } else if (field.getType().equals(Float.TYPE)) {
-                     String property = (String)p.get(field.getName());
+                     String property = (String) p.get(field.getName());
                      if (property != null) {
                         field.set(null, Float.parseFloat(property));
                      }
                   } else if (field.getType().equals(Short.TYPE)) {
-                     String property = (String)p.get(field.getName());
+                     String property = (String) p.get(field.getName());
                      if (property != null) {
                         field.set(null, Short.decode(property));
                      }
                   } else if (field.getType().equals(Character.TYPE)) {
-                     String property = (String)p.get(field.getName());
+                     String property = (String) p.get(field.getName());
                      if (property != null) {
                         field.set(null, property.charAt(0));
                      }
                   }
-               } catch (Exception e) {}
+               } catch (Exception e) {
+               }
             }
          }
       } catch (Exception e) {
@@ -1323,7 +1349,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
       try {
          try {
             p.load(new FileInputStream(settings));
-         } catch (Exception e) {}
+         } catch (Exception e) {
+         }
          Field[] declaredFields = base.getDeclaredFields();
          for (Field field : declaredFields) {
             if (Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers())) {
@@ -1340,7 +1367,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   } else if (field.getType().equals(Long.TYPE)) {
                      p.setProperty(field.getName(), field.getLong(null) + "");
                   } else if (field.getType().equals(String.class)) {
-                     p.setProperty(field.getName(), (String)field.get(null));
+                     p.setProperty(field.getName(), (String) field.get(null));
                   } else if (field.getType().equals(Byte.TYPE)) {
                      p.setProperty(field.getName(), field.getByte(null) + "");
                   } else if (field.getType().equals(Short.TYPE)) {
@@ -1350,7 +1377,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   } else if (field.getType().equals(Character.TYPE)) {
                      p.setProperty(field.getName(), field.getChar(null) + "");
                   }
-               } catch (Exception e) {}
+               } catch (Exception e) {
+               }
             }
          }
          p.store(new FileOutputStream(settings), "");
