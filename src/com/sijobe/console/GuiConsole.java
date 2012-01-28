@@ -639,9 +639,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   if (initialHighlighting < lastHighlighting) {
                      start = message.substring(0, initialHighlighting);
                      end = message.substring(lastHighlighting);
+                     inputOffset -= lastHighlighting - initialHighlighting;
                   } else {
                      start = message.substring(0, lastHighlighting);
                      end = message.substring(initialHighlighting);
+                     inputOffset -= initialHighlighting - lastHighlighting;
                   }
                   message = start + end;
                   initialHighlighting = 0;
@@ -652,7 +654,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
          default:
             // Verifies that the character is in the character set before adding 
-            if (ALLOWED_CHARACTERS.indexOf(key) >= 0 && this.message.length() < INPUT_MAX) {
+            if (updateCounter != 0 && ALLOWED_CHARACTERS.indexOf(key) >= 0 && this.message.length() < INPUT_MAX) {
                if (initialHighlighting == lastHighlighting) {
                   validateCursor();
                   String start = message.substring(0, cursor);
@@ -925,10 +927,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
       String input = INPUT_PREFIX + start + ((updateCounter / 8) % 2 != 0 ? "." : "!") + end;
       int upperbound = input.length();
       // Sets the text to render based off where the cursor is currently positioned
+      if (inputOffset < 0) {
+         inputOffset = 0;
+      }
       if (fontRenderer.getStringWidth(input) >= (textbox_maxx - textbox_minx)) {
-         if (inputOffset < 0) {
-            inputOffset = 0;
-         }
          while (cursor >= inputOffset) {
             if (fontRenderer.getStringWidth(input.substring(inputOffset)) >= (textbox_maxx - textbox_minx)) {
                inputOffset++;
@@ -984,6 +986,66 @@ public class GuiConsole extends GuiScreen implements Runnable {
    }
 
    /**
+    * Tests whether the (x, y) coordinate is within the rectangle or not
+    * 
+    * @param x x coordinate
+    * @param y y coordinate
+    * @param rect integer array in the form of {x, y, width, height}
+    * @return true if point is in rect false if point is not in rect
+    */
+
+   public boolean hitTest(int x, int y, int[] rect) {
+      if (x >= rect[0] && x <= rect[2] && y >= rect[1] && y <= rect[3])
+         return true;
+      else
+         return false;
+   }
+
+   /**
+    * Returns the mouse position as an index within the string line
+    * 
+    * @param x The mouse's x position relative to the start of the string line
+    * @param line The string to find the index in
+    * @return the character index the mouse clicked at. -1 if it's not within the string.
+    */
+   
+   public int mouseAt(int x, String line) {
+      int left = 0;
+      int right = line.length();
+      
+      if(x >= fontRenderer.getStringWidth(line)){
+         return line.length();
+      }
+
+      while (left <= right) {
+         int middle = (left + right) / 2;
+         int length = fontRenderer.getStringWidth(line.substring(0, middle));
+         double upper, lower;
+         if (middle < line.length()-1){
+            upper = length + (fontRenderer.getStringWidth(Character.toString(line.charAt(middle))) / 2.0);
+         }else{
+            upper = fontRenderer.getStringWidth(line);
+         }
+         
+         if (middle >= 1){
+            lower = length - (fontRenderer.getStringWidth(Character.toString(line.charAt(middle - 1))) / 2.0);
+         }else{
+            lower = 0;
+         }
+         
+         if ((x <= upper && x >= lower)) {
+            return middle;
+         } else if (x < lower) {
+            right = middle - 1;
+         } else if (x > upper) {
+            left = middle + 1;
+         }
+      }
+
+      return -1;
+   }
+   
+   /**
     * Called on mouse clicked and processes the button clicks and actions
     * 
     * @see net.minecraft.src.GuiScreen#mouseClicked(int, int, int)
@@ -1006,7 +1068,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
             initialSliding = slider;
          } else if (hitTest(mousex, mousey, TEXT_BOX)) {
             isHighlighting = true;
-            int charat = (int) ((mousex - TEXT_BOX[0] - fontRenderer.getStringWidth(INPUT_PREFIX)) / CHARWIDTH);
+            int mousexCorrected = ((mousex - TEXT_BOX[0] - fontRenderer.getStringWidth(INPUT_PREFIX)));
+            if(mousexCorrected > fontRenderer.getStringWidth(message.substring(0, cursor) + "!")){
+               mousexCorrected -= fontRenderer.getStringWidth("!");
+            }
+            
+            int charat = mouseAt(mousexCorrected, message);
             if (message.length() < charat)
                initialHighlighting = message.length();
             else
@@ -1029,22 +1096,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
             super.mouseClicked(mousex, mousey, button);
          }
       }
-   }
-
-   /**
-    * Tests whether the (x, y) coordinate is within the rectangle or not
-    * 
-    * @param x x coordinate
-    * @param y y coordinate
-    * @param rect integer array in the form of {x, y, width, height}
-    * @return true if point is in rect false if point is not in rect
-    */
-
-   public boolean hitTest(int x, int y, int[] rect) {
-      if (x >= rect[0] && x <= rect[2] && y >= rect[1] && y <= rect[3])
-         return true;
-      else
-         return false;
    }
 
    /**
@@ -1072,7 +1123,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
             initialSliding = 0;
          }
       } else if (isHighlighting) {
-         int charat = (int) ((mousex - TEXT_BOX[0] - fontRenderer.getStringWidth(INPUT_PREFIX)) / CHARWIDTH);
+         int mousexCorrected = ((mousex - TEXT_BOX[0] - fontRenderer.getStringWidth(INPUT_PREFIX)));
+         if(mousexCorrected > fontRenderer.getStringWidth(message.substring(0, cursor) + "!")){
+            mousexCorrected -= fontRenderer.getStringWidth("!");
+         }
+         int charat = mouseAt(mousexCorrected, message);
          if (message.length() < charat) {
             lastHighlighting = message.length();
          } else {
