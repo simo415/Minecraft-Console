@@ -1008,12 +1008,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * @param line The string to find the index in
     * @return the character index the mouse clicked at. -1 if it's not within the string.
     */
-   
+
    public int mouseAt(int x, String line) {
       int left = 0;
       int right = line.length();
-      
-      if(x >= fontRenderer.getStringWidth(line)){
+
+      if (x >= fontRenderer.getStringWidth(line)) {
          return line.length();
       }
 
@@ -1021,18 +1021,18 @@ public class GuiConsole extends GuiScreen implements Runnable {
          int middle = (left + right) / 2;
          int length = fontRenderer.getStringWidth(line.substring(0, middle));
          double upper, lower;
-         if (middle < line.length()-1){
+         if (middle < line.length() - 1) {
             upper = length + (fontRenderer.getStringWidth(Character.toString(line.charAt(middle))) / 2.0);
-         }else{
+         } else {
             upper = fontRenderer.getStringWidth(line);
          }
-         
-         if (middle >= 1){
+
+         if (middle >= 1) {
             lower = length - (fontRenderer.getStringWidth(Character.toString(line.charAt(middle - 1))) / 2.0);
-         }else{
+         } else {
             lower = 0;
          }
-         
+
          if ((x <= upper && x >= lower)) {
             return middle;
          } else if (x < lower) {
@@ -1044,7 +1044,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
       return -1;
    }
-   
+
    /**
     * Called on mouse clicked and processes the button clicks and actions
     * 
@@ -1069,10 +1069,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
          } else if (hitTest(mousex, mousey, TEXT_BOX)) {
             isHighlighting = true;
             int mousexCorrected = ((mousex - TEXT_BOX[0] - fontRenderer.getStringWidth(INPUT_PREFIX)));
-            if(mousexCorrected > fontRenderer.getStringWidth(message.substring(0, cursor) + "!")){
+            if (mousexCorrected > fontRenderer.getStringWidth(message.substring(0, cursor) + "!")) {
                mousexCorrected -= fontRenderer.getStringWidth("!");
             }
-            
+
             int charat = mouseAt(mousexCorrected, message);
             if (message.length() < charat)
                initialHighlighting = message.length();
@@ -1124,10 +1124,13 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
       } else if (isHighlighting) {
          int mousexCorrected = ((mousex - TEXT_BOX[0] - fontRenderer.getStringWidth(INPUT_PREFIX)));
-         if(mousexCorrected > fontRenderer.getStringWidth(message.substring(0, cursor) + "!")){
+         if (mousexCorrected > fontRenderer.getStringWidth(message.substring(0, cursor) + "!")) {
             mousexCorrected -= fontRenderer.getStringWidth("!");
          }
          int charat = mouseAt(mousexCorrected, message);
+         if(charat < 0){
+            charat = 0;
+         }
          if (message.length() < charat) {
             lastHighlighting = message.length();
          } else {
