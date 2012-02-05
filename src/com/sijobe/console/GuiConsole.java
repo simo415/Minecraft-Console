@@ -62,6 +62,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /* @formatter:off */
    protected String message;                                         // The current user input
+   protected String input;                                           // The current input line to draw (includes prefix)
    private int updateCounter;                                        // The tick count - used for cursor blink rate
    private int slider;                                               // Position of the scroll bar
    private int cursor;                                               // Position of the cursor
@@ -534,11 +535,15 @@ public class GuiConsole extends GuiScreen implements Runnable {
          case Keyboard.KEY_LEFT:
             // Moves the cursor left
             cursor--;
+            initialHighlighting = 0;
+            lastHighlighting = 0;
             break;
 
          case Keyboard.KEY_RIGHT:
             // Moves the cursor right
             cursor++;
+            initialHighlighting = 0;
+            lastHighlighting = 0;
             break;
 
          case Keyboard.KEY_DOWN:
@@ -800,6 +805,46 @@ public class GuiConsole extends GuiScreen implements Runnable {
    }
 
    /**
+    * Sets the inputOffset value to the appropriate place 
+    */
+   
+   private void validateOffset() {
+      String start = message.substring(0, cursor);
+      String end = message.substring(cursor, message.length());
+      input = INPUT_PREFIX + start + ((updateCounter / 8) % 2 != 0 ? "." : "!") + end;
+
+      if (fontRenderer.getStringWidth(input) >= TEXT_BOX[2] - TEXT_BOX[0] - BORDERSIZE * 2) {
+         int upperbound = input.length();
+         int boxsize = TEXT_BOX[2] - TEXT_BOX[0] - BORDERSIZE * 2;
+         if (inputOffset < 0) {
+            inputOffset = 0;
+         }
+
+         if (inputOffset > INPUT_PREFIX.length()) {
+            while (cursor < inputOffset - INPUT_PREFIX.length() && inputOffset > 0) {
+               inputOffset--;
+            }
+         } else {
+            while (cursor < inputOffset && inputOffset > 0) {
+               inputOffset--;
+            }
+         }
+
+         while (fontRenderer.getStringWidth(input.substring(inputOffset, cursor + INPUT_PREFIX.length() + 1)) >= boxsize) {
+            inputOffset++;
+         }
+
+         while (fontRenderer.getStringWidth(input.substring(inputOffset, upperbound)) >= boxsize) {
+            upperbound--;
+         }
+
+         if (upperbound > input.length())
+            upperbound = input.length();
+         input = input.substring(inputOffset, upperbound);
+      }
+   }
+
+   /**
     * Called per frame to draw the new frame
     * 
     * @see net.minecraft.src.GuiScreen#drawScreen(int, int, float)
@@ -831,15 +876,31 @@ public class GuiConsole extends GuiScreen implements Runnable {
             firstH = lastHighlighting;
             lastH = initialHighlighting;
          }
+
          if (firstH < 0) {
             firstH = 0;
          }
+
          if (lastH > message.length()) {
             lastH = message.length();
          }
 
-         int highlighting_minx = 1 + TEXT_BOX[0] + fontRenderer.getStringWidth(INPUT_PREFIX) + fontRenderer.getStringWidth(message.substring(0, firstH));
-         int highlighting_maxx = 1 + highlighting_minx + fontRenderer.getStringWidth(message.substring(firstH, lastH));
+         String messageSection;
+         if (inputOffset < INPUT_PREFIX.length()) {
+            messageSection = (INPUT_PREFIX + message.substring(0, firstH)).substring(inputOffset);
+         } else {
+            messageSection = message.substring((inputOffset - INPUT_PREFIX.length()) > firstH ? firstH : inputOffset - INPUT_PREFIX.length(), firstH);
+         }
+         
+         int highlighting_minx = 1 + TEXT_BOX[0] + fontRenderer.getStringWidth(messageSection);
+         
+         if (firstH < inputOffset - INPUT_PREFIX.length()) {
+            messageSection = message.substring(inputOffset - INPUT_PREFIX.length(), lastH);
+         } else {
+            messageSection = message.substring(firstH, lastH);
+         }
+         
+         int highlighting_maxx = 1 + highlighting_minx + fontRenderer.getStringWidth(messageSection);
          int highlighting_miny = TEXT_BOX[1];
          int highlighting_maxy = highlighting_miny + CHARHEIGHT;
          if (cursor > firstH && cursor < lastH)
@@ -848,6 +909,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             highlighting_minx += fontRenderer.getStringWidth("!");
             highlighting_maxx += fontRenderer.getStringWidth("!");
          }
+         
          drawRect(highlighting_minx, highlighting_miny, highlighting_maxx, highlighting_maxy, COLOR_TEXT_HIGHLIGHT);
       }
 
@@ -922,32 +984,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
       // Input
       validateCursor();
-      String start = message.substring(0, cursor);
-      String end = message.substring(cursor, message.length());
-      String input = INPUT_PREFIX + start + ((updateCounter / 8) % 2 != 0 ? "." : "!") + end;
-      int upperbound = input.length();
-      // Sets the text to render based off where the cursor is currently positioned
-      if (inputOffset < 0) {
-         inputOffset = 0;
-      }
-      if (fontRenderer.getStringWidth(input) >= (textbox_maxx - textbox_minx)) {
-         while (cursor >= inputOffset) {
-            if (fontRenderer.getStringWidth(input.substring(inputOffset)) >= (textbox_maxx - textbox_minx)) {
-               inputOffset++;
-            } else {
-               break;
-            }
-         }
-         while (cursor < inputOffset && inputOffset > 0) {
-            inputOffset--;
-            while (fontRenderer.getStringWidth(input.substring(inputOffset, upperbound)) >= (textbox_maxx - textbox_minx)) {
-               upperbound--;
-            }
-         }
-         if (upperbound > input.length())
-            upperbound = input.length();
-         input = input.substring(inputOffset, upperbound);
-      }
+      validateOffset();
       fontRenderer.drawString(input, textbox_minx + BORDERSIZE, textbox_miny + 1, COLOR_INPUT_TEXT);
 
       // Titlebar
@@ -990,7 +1027,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * 
     * @param x x coordinate
     * @param y y coordinate
-    * @param rect integer array in the form of {x, y, width, height}
+    * @param rect integer array in the form of {mix x, min y, max x, max y}
     * @return true if point is in rect false if point is not in rect
     */
 
@@ -1068,12 +1105,20 @@ public class GuiConsole extends GuiScreen implements Runnable {
             initialSliding = slider;
          } else if (hitTest(mousex, mousey, TEXT_BOX)) {
             isHighlighting = true;
-            int mousexCorrected = ((mousex - TEXT_BOX[0] - fontRenderer.getStringWidth(INPUT_PREFIX)));
-            if (mousexCorrected > fontRenderer.getStringWidth(message.substring(0, cursor) + "!")) {
+            int mousexCorrected = mousex - TEXT_BOX[0] - BORDERSIZE;
+            int startStringIndex = 0;
+            int cutPrefixChars = (inputOffset <= INPUT_PREFIX.length() ? inputOffset : INPUT_PREFIX.length());
+            if (inputOffset < INPUT_PREFIX.length()) {
+               mousexCorrected -= fontRenderer.getStringWidth(INPUT_PREFIX.substring(inputOffset));
+            } else {
+               startStringIndex = inputOffset - INPUT_PREFIX.length();
+            }
+
+            if (mousexCorrected > fontRenderer.getStringWidth(message.substring(startStringIndex, cursor) + "!")) {
                mousexCorrected -= fontRenderer.getStringWidth("!");
             }
 
-            int charat = mouseAt(mousexCorrected, message);
+            int charat = mouseAt(mousexCorrected, message.substring(startStringIndex)) + startStringIndex;
             if (message.length() < charat)
                initialHighlighting = message.length();
             else
@@ -1123,12 +1168,21 @@ public class GuiConsole extends GuiScreen implements Runnable {
             initialSliding = 0;
          }
       } else if (isHighlighting) {
-         int mousexCorrected = ((mousex - TEXT_BOX[0] - fontRenderer.getStringWidth(INPUT_PREFIX)));
-         if (mousexCorrected > fontRenderer.getStringWidth(message.substring(0, cursor) + "!")) {
+         int mousexCorrected = mousex - TEXT_BOX[0] - BORDERSIZE;
+         int startStringIndex = 0;
+
+         if (inputOffset < INPUT_PREFIX.length()) {
+            mousexCorrected -= fontRenderer.getStringWidth(INPUT_PREFIX.substring(inputOffset));
+         } else {
+            startStringIndex = inputOffset - INPUT_PREFIX.length();
+         }
+
+         if (mousexCorrected > fontRenderer.getStringWidth(message.substring(startStringIndex, cursor) + "!")) {
             mousexCorrected -= fontRenderer.getStringWidth("!");
          }
-         int charat = mouseAt(mousexCorrected, message);
-         if(charat < 0){
+
+         int charat = mouseAt(mousexCorrected, message.substring(startStringIndex)) + startStringIndex;
+         if (charat < 0) {
             charat = 0;
          }
          if (message.length() < charat) {
@@ -1136,11 +1190,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
          } else {
             lastHighlighting = charat;
          }
+
+         cursor = lastHighlighting;
+         validateCursor();
+         validateOffset();
          if (!Mouse.isButtonDown(0)) {
             isHighlighting = false;
-            if (lastHighlighting == initialHighlighting) {
-               cursor = initialHighlighting;
-            }
          }
       }
    }
