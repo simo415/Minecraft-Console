@@ -460,6 +460,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                if (lastHighlighting == initialHighlighting) {
                   String start = "";
                   String end = "";
+                  validateCursor();
                   if (message != null && message.length() > 0) {
                      start = message.substring(0, cursor);
                      end = message.substring(cursor);
@@ -553,9 +554,13 @@ public class GuiConsole extends GuiScreen implements Runnable {
             // Moves the cursor left
             if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
                if (initialHighlighting == lastHighlighting) {
-                  initialHighlighting = lastHighlighting = cursor;
+                  initialHighlighting = cursor;
+                  lastHighlighting = cursor;
                }
                lastHighlighting--;
+               if(lastHighlighting < 0){
+                  lastHighlighting = 0;
+               }
             } else {
                initialHighlighting = 0;
                lastHighlighting = 0;
@@ -567,9 +572,13 @@ public class GuiConsole extends GuiScreen implements Runnable {
             // Moves the cursor right
             if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
                if (initialHighlighting == lastHighlighting) {
-                  initialHighlighting = lastHighlighting = cursor;
+                  initialHighlighting = cursor;
+                  lastHighlighting = cursor;
                }
                lastHighlighting++;
+               if(lastHighlighting > message.length()){
+                  lastHighlighting = message.length();
+               }
             } else {
                initialHighlighting = 0;
                lastHighlighting = 0;
@@ -670,20 +679,25 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   this.message = start.substring(0, (start.length() - 1 > -1 ? start.length() - 1 : 0)) + end;
                   cursor--;
                   inputOffset--;
+                  if(inputOffset < 0){
+                     inputOffset = 0;
+                  }
                } else {
                   String start, end;
                   if (initialHighlighting < lastHighlighting) {
                      start = message.substring(0, initialHighlighting);
                      end = message.substring(lastHighlighting);
-                     inputOffset -= lastHighlighting - initialHighlighting;
                   } else {
                      start = message.substring(0, lastHighlighting);
                      end = message.substring(initialHighlighting);
-                     inputOffset -= initialHighlighting - lastHighlighting;
                   }
-                  message = start + end;
+                  inputOffset -= Math.abs(lastHighlighting - initialHighlighting);
+                  if(inputOffset < 0){
+                     inputOffset = 0;
+                  }
                   initialHighlighting = 0;
                   lastHighlighting = 0;
+                  message = start + end;
                }
             }
             break;
@@ -852,10 +866,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
       if (fontRenderer.getStringWidth(input) >= TEXT_BOX[2] - TEXT_BOX[0] - BORDERSIZE * 2) {
          int upperbound = input.length();
          int boxsize = TEXT_BOX[2] - TEXT_BOX[0] - BORDERSIZE * 2;
+         
          if (inputOffset < 0) {
             inputOffset = 0;
          }
-
+         
          if (inputOffset > INPUT_PREFIX.length()) {
             while (cursor < inputOffset - INPUT_PREFIX.length() && inputOffset > 0) {
                inputOffset--;
@@ -874,9 +889,27 @@ public class GuiConsole extends GuiScreen implements Runnable {
             upperbound--;
          }
 
-         if (upperbound > input.length())
+         if (upperbound > input.length()){
             upperbound = input.length();
+         }
          input = input.substring(inputOffset, upperbound);
+      }
+   }
+   
+   /**
+    * Makes sure the highlighting values are within the string bounds
+    */
+   private void validateHighlighting(){
+      if(lastHighlighting < 0){
+         lastHighlighting = 0;
+      }else if(lastHighlighting > message.length()){
+         lastHighlighting = message.length();
+      }
+      
+      if(initialHighlighting < 0){
+         initialHighlighting = 0;
+      }else if(initialHighlighting > message.length()){
+         initialHighlighting = message.length();
       }
    }
 
@@ -922,6 +955,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
 
          String messageSection;
+         validateCursor();
+         validateOffset();
+         validateHighlighting();
          if (inputOffset < INPUT_PREFIX.length()) {
             messageSection = (INPUT_PREFIX + message.substring(0, firstH)).substring(inputOffset);
          } else {
