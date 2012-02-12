@@ -1,7 +1,5 @@
 package com.sijobe.console;
 
-import net.minecraft.src.*;
-
 import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
@@ -18,10 +16,22 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
 
 import net.minecraft.client.Minecraft;
+import net.minecraft.src.ChatAllowedCharacters;
+import net.minecraft.src.ChatLine;
+import net.minecraft.src.EntityClientPlayerMP;
+import net.minecraft.src.FontRenderer;
+import net.minecraft.src.GuiIngame;
+import net.minecraft.src.GuiSavingLevelString;
+import net.minecraft.src.GuiScreen;
+import net.minecraft.src.KeyBinding;
+import net.minecraft.src.ModLoader;
+import net.minecraft.src.NetClientHandler;
+import net.minecraft.src.mod_Console;
 
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
@@ -31,15 +41,13 @@ import org.lwjgl.opengl.GL11;
  * @formatter:off
  *                TODO: P1 - Only save logs for the current world
  *                TODO: P1 - Output filtering - allow blocking of certain text/people
- *                DONE: P3 - Text selection
  *                TODO: p2 - Text selection in the chat-history field (copy text)
- *                DONE: p2 - Ctrl + x (cut highlighted section)
  *                TODO: P2 - Spinner (tab auto complete)
  *                TODO: P3 - Drop down menus
  *                TODO: P2 - Improve look and feel
  *                TODO: P2 - Custom text color support. Holding CTRL then type a number will set the text to that color [0-f] - (0-15)
  *                TODO: P1 - Add ability to disable settings loader (in code) and ability to reset the settings ingame
- *                TODO: P2 - Configure any setting in an easy to use command [@set setting_name(non case-sensitive) value] and [@get setting_name(non case-sensitive)]
+ *                DONE: P2 - Configure any setting in an easy to use command [@set setting_name(non case-sensitive) value] and [@get setting_name(non case-sensitive)]
  *                TODO: P3 - Dynamic settings screen, configure any setting in an easy to use GUI
  * 
  * @author simo_415
@@ -114,6 +122,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static double CHARWIDTH = 6;                              // Maximum character width - used to quickly determine line length
 
    private static boolean CLOSE_ON_SUBMIT = false;                   // Closes the GUI after the input has been submit
+   private static boolean CLOSE_WITH_OPEN_KEY = true;                // Closes the GUI if the open key pressed again
 
    private static int INPUT_MAX = 150;                               // Maximum input size on the console
    private static int INPUT_SERVER_MAX = 100;                        // Maximum server message size - splits the input to this length if it is longer
@@ -710,27 +719,33 @@ public class GuiConsole extends GuiScreen implements Runnable {
             break;
          default:
             // Verifies that the character is in the character set before adding 
-            if (updateCounter != 0 && ALLOWED_CHARACTERS.indexOf(key) >= 0 && this.message.length() < INPUT_MAX) {
-               if (initialHighlighting == lastHighlighting) {
-                  validateCursor();
-                  String start = message.substring(0, cursor);
-                  String end = message.substring(cursor, message.length());
-                  this.message = start + key + end;
-                  cursor++;
-               } else {
-                  String start, end;
-                  if (initialHighlighting < lastHighlighting) {
-                     start = message.substring(0, initialHighlighting);
-                     end = message.substring(lastHighlighting);
+            if (updateCounter != 0) {
+               if (CLOSE_WITH_OPEN_KEY && id == mod_Console.openKey.keyCode) {
+                  mc.displayGuiScreen(null);
+                  break;
+               }
+               if (ALLOWED_CHARACTERS.indexOf(key) >= 0 && this.message.length() < INPUT_MAX) {
+                  if (initialHighlighting == lastHighlighting) {
+                     validateCursor();
+                     String start = message.substring(0, cursor);
+                     String end = message.substring(cursor, message.length());
+                     this.message = start + key + end;
+                     cursor++;
                   } else {
-                     start = message.substring(0, lastHighlighting);
-                     end = message.substring(initialHighlighting);
-                  }
+                     String start, end;
+                     if (initialHighlighting < lastHighlighting) {
+                        start = message.substring(0, initialHighlighting);
+                        end = message.substring(lastHighlighting);
+                     } else {
+                        start = message.substring(0, lastHighlighting);
+                        end = message.substring(initialHighlighting);
+                     }
 
-                  message = start + key + end;
-                  cursor = start.length() + 1;
-                  initialHighlighting = 0;
-                  lastHighlighting = 0;
+                     message = start + key + end;
+                     cursor = start.length() + 1;
+                     initialHighlighting = 0;
+                     lastHighlighting = 0;
+                  }
                }
             }
       }

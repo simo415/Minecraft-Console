@@ -24,9 +24,13 @@ import org.lwjgl.input.Keyboard;
 import net.minecraft.client.Minecraft;
 
 public class mod_Console extends BaseMod {
+   
+   public static KeyBinding openKey;
+   
    public mod_Console() {
       GuiConsole.getInstance();
-      ModLoader.RegisterKey(this, new KeyBinding("Console", Keyboard.KEY_BACKSLASH), false);
+      openKey = new KeyBinding("Console", Keyboard.KEY_BACKSLASH);
+      ModLoader.RegisterKey(this, openKey, false);
    }
    
    @Override
