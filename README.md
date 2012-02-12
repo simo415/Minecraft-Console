@@ -100,7 +100,8 @@ Examples:
  - 42,19 is Shift+R keys
  - 42,19,20 is Shift+R+T keys
 
-![Key codes](http://img87.imageshack.us/img87/5476/keyboardt.png)
+![Key codes](http://i.imgur.com/2vy5o.png)
+[Source](http://www.minecraftwiki.net/wiki/Key_Codes)
 
 Downloads
 ------------
