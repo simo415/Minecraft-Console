@@ -33,7 +33,7 @@ import org.lwjgl.opengl.GL11;
  *                TODO: P1 - Output filtering - allow blocking of certain text/people
  *                DONE: P3 - Text selection
  *                TODO: p2 - Text selection in the chat-history field (copy text)
- *                TODO: p2 - Ctrl + x (cut highlighted section)
+ *                DONE: p2 - Ctrl + x (cut highlighted section)
  *                TODO: P2 - Spinner (tab auto complete)
  *                TODO: P3 - Drop down menus
  *                TODO: P2 - Improve look and feel
@@ -167,7 +167,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
    private static String LOG_PATH = "mods/console/logs";             // Relative location of the console logs
    // Mod directory
-   private static File MOD_DIR = new File(Minecraft.getMinecraftDir(),MOD_PATH);
+   public static File MOD_DIR = new File(Minecraft.getMinecraftDir(), MOD_PATH);
    private static File LOG_DIR;                                      // Log directory
 
    private static GuiConsole INSTANCE;                               // Instance of the class for singleton pattern
@@ -219,6 +219,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       sdf = new SimpleDateFormat(DATE_FORMAT_LOG);
       keyBindings = generateKeyBindings();
       keyDown = new Vector<Integer>();
+      addConsoleListener(new ConsoleSettingCommands());
    }
 
    /**
@@ -461,14 +462,17 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   String start = "";
                   String end = "";
                   validateCursor();
+
                   if (message != null && message.length() > 0) {
                      start = message.substring(0, cursor);
                      end = message.substring(cursor);
                   }
+
                   int limit = INPUT_MAX - message.length();
                   if (limit < clipboard.length()) {
                      clipboard = clipboard.substring(0, limit);
                   }
+
                   message = start + clipboard + end;
                   cursor = (start + clipboard).length() + 1;
                } else {
@@ -479,6 +483,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   } else {
                      start = message.substring(0, lastHighlighting);
                      end = message.substring(initialHighlighting);
+                  }
+
+                  int limit = INPUT_MAX - message.length();
+                  if (limit < clipboard.length()) {
+                     clipboard = clipboard.substring(0, limit);
                   }
 
                   message = start + clipboard + end;
@@ -527,14 +536,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
             String s = message.trim();
 
             if (s.length() > 0) {
-               if (isMultiplayerMode()) { // Verifies that each line doesnt pass the maximum server length
-                  for (int i = 0; i <= s.length() / INPUT_SERVER_MAX; i++) {
-                     int end = (i + 1) * INPUT_SERVER_MAX > s.length() ? s.length() : (i + 1) * INPUT_SERVER_MAX;
-                     mc.thePlayer.sendChatMessage(s.substring(i * INPUT_SERVER_MAX, end));
-                  }
-               } else {
-                  mc.thePlayer.sendChatMessage(s);
-               }
                addInputMessage(s);
             }
             if (CLOSE_ON_SUBMIT) {
@@ -558,7 +559,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   lastHighlighting = cursor;
                }
                lastHighlighting--;
-               if(lastHighlighting < 0){
+               if (lastHighlighting < 0) {
                   lastHighlighting = 0;
                }
             } else {
@@ -576,7 +577,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   lastHighlighting = cursor;
                }
                lastHighlighting++;
-               if(lastHighlighting > message.length()){
+               if (lastHighlighting > message.length()) {
                   lastHighlighting = message.length();
                }
             } else {
@@ -679,7 +680,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   this.message = start.substring(0, (start.length() - 1 > -1 ? start.length() - 1 : 0)) + end;
                   cursor--;
                   inputOffset--;
-                  if(inputOffset < 0){
+                  if (inputOffset < 0) {
                      inputOffset = 0;
                   }
                } else {
@@ -692,7 +693,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                      end = message.substring(initialHighlighting);
                   }
                   inputOffset -= Math.abs(lastHighlighting - initialHighlighting);
-                  if(inputOffset < 0){
+                  if (inputOffset < 0) {
                      inputOffset = 0;
                   }
                   initialHighlighting = 0;
@@ -866,11 +867,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
       if (fontRenderer.getStringWidth(input) >= TEXT_BOX[2] - TEXT_BOX[0] - BORDERSIZE * 2) {
          int upperbound = input.length();
          int boxsize = TEXT_BOX[2] - TEXT_BOX[0] - BORDERSIZE * 2;
-         
+
          if (inputOffset < 0) {
             inputOffset = 0;
          }
-         
+
          if (inputOffset > INPUT_PREFIX.length()) {
             while (cursor < inputOffset - INPUT_PREFIX.length() && inputOffset > 0) {
                inputOffset--;
@@ -889,26 +890,26 @@ public class GuiConsole extends GuiScreen implements Runnable {
             upperbound--;
          }
 
-         if (upperbound > input.length()){
+         if (upperbound > input.length()) {
             upperbound = input.length();
          }
          input = input.substring(inputOffset, upperbound);
       }
    }
-   
+
    /**
     * Makes sure the highlighting values are within the string bounds
     */
-   private void validateHighlighting(){
-      if(lastHighlighting < 0){
+   private void validateHighlighting() {
+      if (lastHighlighting < 0) {
          lastHighlighting = 0;
-      }else if(lastHighlighting > message.length()){
+      } else if (lastHighlighting > message.length()) {
          lastHighlighting = message.length();
       }
-      
-      if(initialHighlighting < 0){
+
+      if (initialHighlighting < 0) {
          initialHighlighting = 0;
-      }else if(initialHighlighting > message.length()){
+      } else if (initialHighlighting > message.length()) {
          initialHighlighting = message.length();
       }
    }
@@ -1308,8 +1309,23 @@ public class GuiConsole extends GuiScreen implements Runnable {
       if ((LOGGING & LOGGING_INPUT) > 0) {
          log.add(INPUT_PREFIX + message);
       }
+
+      boolean post = true;
       for (ConsoleListener cl : LISTENERS) {
-         cl.processInput(message);
+         if (!cl.processInput(message)) {
+            post = false;
+         }
+      }
+
+      if (post) {
+         if (isMultiplayerMode()) { // Verifies that each line doesnt pass the maximum server length
+            for (int i = 0; i <= message.length() / INPUT_SERVER_MAX; i++) {
+               int end = (i + 1) * INPUT_SERVER_MAX > message.length() ? message.length() : (i + 1) * INPUT_SERVER_MAX;
+               mc.thePlayer.sendChatMessage(message.substring(i * INPUT_SERVER_MAX, end));
+            }
+         } else {
+            mc.thePlayer.sendChatMessage(message);
+         }
       }
    }
 
@@ -1326,6 +1342,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       if ((LOGGING & LOGGING_OUTPUT) > 0) {
          log.add(message);
       }
+
       for (ConsoleListener cl : LISTENERS) {
          cl.processOutput(message);
       }

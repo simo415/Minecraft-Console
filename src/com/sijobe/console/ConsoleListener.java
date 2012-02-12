@@ -26,8 +26,9 @@ public interface ConsoleListener {
     * submitted to the user
     * 
     * @param input - The input string from the user
+    * @returns true if message should be sent and false if message should not be sent
     */
-   public void processInput(String input);
+   public boolean processInput(String input);
    
    /**
     * Implementation of this method allows output to be processed when output is
