@@ -180,6 +180,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static File LOG_DIR;                                      // Log directory
 
    private static GuiConsole INSTANCE;                               // Instance of the class for singleton pattern
+   
+   private static boolean EMACS_KEYS = false;                        // Use emacs keybindings
+   
    /* @formatter:on */
 
    /**
@@ -455,8 +458,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
    @Override
    protected void keyTyped(char key, int id) {
       // Multi key validation
-      // Control + ?
-      if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {
+      // Control + ?      
+      if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {                    
          if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
             if (lastHighlighting != initialHighlighting) {
                if (initialHighlighting < lastHighlighting)
@@ -465,46 +468,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   setClipboardString(message.substring(lastHighlighting, initialHighlighting));
             }
          } else if (Keyboard.isKeyDown(Keyboard.KEY_V)) {
-            String clipboard = getClipboardString();
-            if (clipboard != null) {
-               if (lastHighlighting == initialHighlighting) {
-                  String start = "";
-                  String end = "";
-                  validateCursor();
-
-                  if (message != null && message.length() > 0) {
-                     start = message.substring(0, cursor);
-                     end = message.substring(cursor);
-                  }
-
-                  int limit = INPUT_MAX - message.length();
-                  if (limit < clipboard.length()) {
-                     clipboard = clipboard.substring(0, limit);
-                  }
-
-                  message = start + clipboard + end;
-                  cursor = (start + clipboard).length() + 1;
-               } else {
-                  String start, end;
-                  if (initialHighlighting < lastHighlighting) {
-                     start = message.substring(0, initialHighlighting);
-                     end = message.substring(lastHighlighting);
-                  } else {
-                     start = message.substring(0, lastHighlighting);
-                     end = message.substring(initialHighlighting);
-                  }
-
-                  int limit = INPUT_MAX - message.length();
-                  if (limit < clipboard.length()) {
-                     clipboard = clipboard.substring(0, limit);
-                  }
-
-                  message = start + clipboard + end;
-                  cursor = (start + clipboard).length() + 1;
-                  initialHighlighting = 0;
-                  lastHighlighting = 0;
-               }
-            }
+            paste();
          } else if (Keyboard.isKeyDown(Keyboard.KEY_X)) {
             if (initialHighlighting != lastHighlighting) {
                String start, end;
@@ -522,8 +486,35 @@ public class GuiConsole extends GuiScreen implements Runnable {
                initialHighlighting = lastHighlighting = 0;
             }
          } else if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
-            initialHighlighting = 0;
-            lastHighlighting = message.length();
+            if (!EMACS_KEYS) {
+               initialHighlighting = 0;
+               lastHighlighting = message.length();
+            } else {
+               // go to beginning of line
+               cursor = 0;
+            }
+         } else if (Keyboard.isKeyDown(Keyboard.KEY_E)) {
+            if (EMACS_KEYS) {
+               // go to end of line
+               cursor = message.length();
+            }
+         } else if (Keyboard.isKeyDown(Keyboard.KEY_K)) {
+            if (EMACS_KEYS) {
+               // Cut to end of line
+               setClipboardString(message.substring(cursor, message.length()));
+             
+               message = message.substring(0, cursor);
+               initialHighlighting = 0;
+               lastHighlighting = 0;
+            }
+         } else if (Keyboard.isKeyDown(Keyboard.KEY_Y)) {
+            if (EMACS_KEYS) {
+               paste();
+            }
+         } else if ( Keyboard.isKeyDown(Keyboard.KEY_D)) {
+            if (EMACS_KEYS) {
+               delete();
+            }
          }
          return;
       }
@@ -613,27 +604,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             break;
 
          case Keyboard.KEY_DELETE:
-            // Delete
-            if (message.length() > 0) {
-               if (initialHighlighting == lastHighlighting) {
-                  validateCursor();
-                  String start = message.substring(0, cursor);
-                  String end = message.substring(cursor, message.length());
-                  this.message = start + (end.length() > 0 ? end.substring(1) : end);
-               } else {
-                  String start, end;
-                  if (initialHighlighting < lastHighlighting) {
-                     start = message.substring(0, initialHighlighting);
-                     end = message.substring(lastHighlighting);
-                  } else {
-                     start = message.substring(0, lastHighlighting);
-                     end = message.substring(initialHighlighting);
-                  }
-                  message = start + end;
-                  initialHighlighting = 0;
-                  lastHighlighting = 0;
-               }
-            }
+            delete();
             break;
 
          case Keyboard.KEY_TAB:
@@ -927,6 +898,79 @@ public class GuiConsole extends GuiScreen implements Runnable {
       } else if (initialHighlighting > message.length()) {
          initialHighlighting = message.length();
       }
+   }
+   
+   /**
+    * Paste clipboard at cursor position.
+    */
+   private void paste() {
+      String clipboard = getClipboardString();
+      if (clipboard != null) {
+         if (lastHighlighting == initialHighlighting) {
+            String start = "";
+            String end = "";
+            validateCursor();
+
+            if (message != null && message.length() > 0) {
+               start = message.substring(0, cursor);
+               end = message.substring(cursor);
+            }
+
+            int limit = INPUT_MAX - message.length();
+            if (limit < clipboard.length()) {
+               clipboard = clipboard.substring(0, limit);
+            }
+
+            message = start + clipboard + end;
+            cursor = (start + clipboard).length() + 1;
+         } else {
+            String start, end;
+            if (initialHighlighting < lastHighlighting) {
+               start = message.substring(0, initialHighlighting);
+               end = message.substring(lastHighlighting);
+            } else {
+               start = message.substring(0, lastHighlighting);
+               end = message.substring(initialHighlighting);
+            }
+
+            int limit = INPUT_MAX - message.length();
+            if (limit < clipboard.length()) {
+               clipboard = clipboard.substring(0, limit);
+            }
+
+            message = start + clipboard + end;
+            cursor = (start + clipboard).length() + 1;
+            initialHighlighting = 0;
+            lastHighlighting = 0;
+         }
+      }       
+   }
+   
+   /** 
+    * Delete the next character.
+    */
+   private void delete() {
+      // Delete
+      if (message.length() > 0) {
+         if (initialHighlighting == lastHighlighting) {
+            validateCursor();
+            String start = message.substring(0, cursor);
+            String end = message.substring(cursor, message.length());
+            this.message = start + (end.length() > 0 ? end.substring(1) : end);
+         } else {
+            String start, end;
+            if (initialHighlighting < lastHighlighting) {
+               start = message.substring(0, initialHighlighting);
+               end = message.substring(lastHighlighting);
+            } else {
+               start = message.substring(0, lastHighlighting);
+               end = message.substring(initialHighlighting);
+            }
+            message = start + end;
+            initialHighlighting = 0;
+            lastHighlighting = 0;
+         }
+      }      
    }
 
    /**
