@@ -53,7 +53,7 @@ public class ConsoleSettingCommands implements ConsoleListener {
                GuiConsole.getInstance().addOutputMessage(list.substring(0, list.indexOf("\n")));
                list = list.substring(list.indexOf("\n") + 1);
             }
-         } else if (input.startsWith("@save ")) {
+         } else if (input.startsWith("@save")) {
             GuiConsole.getInstance().writeSettings(GuiConsole.class, new File(GuiConsole.MOD_DIR, "gui.properties"));
          } else if (input.startsWith("@help")) {
             GuiConsole.getInstance().addOutputMessage("@set [property] [new value]  -  Sets the propery to a new value");
