@@ -26,6 +26,8 @@ import net.minecraft.client.Minecraft;
 public class mod_Console extends BaseMod {
    
    public static KeyBinding openKey;
+   public static ModSettings settings;
+   public static ModSettingScreen settingScreen;
    
    public mod_Console() {
       GuiConsole.getInstance();
@@ -43,6 +45,9 @@ public class mod_Console extends BaseMod {
    
    @Override
    public void load() {
+      settings = new ModSettings("Console");
+      settingScreen = new ModSettingScreen("Minecraft Console v" + getVersion());
+      
    }
    
    public String getVersion() {
