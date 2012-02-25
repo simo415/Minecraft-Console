@@ -7,6 +7,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Properties;
 
+import net.minecraft.src.mod_Console;
+
 /**
  * 
  * @author simo_415

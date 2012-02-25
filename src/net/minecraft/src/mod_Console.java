@@ -18,16 +18,19 @@ package net.minecraft.src;
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */
-import com.sijobe.console.GuiConsole;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+
+import net.minecraft.client.Minecraft;
 
 import org.lwjgl.input.Keyboard;
-import net.minecraft.client.Minecraft;
+
+import com.sijobe.console.GuiConsole;
 
 public class mod_Console extends BaseMod {
    
    public static KeyBinding openKey;
-   public static ModSettings settings;
-   public static ModSettingScreen settingScreen;
    
    public mod_Console() {
       GuiConsole.getInstance();
@@ -45,9 +48,63 @@ public class mod_Console extends BaseMod {
    
    @Override
    public void load() {
-      settings = new ModSettings("Console");
-      settingScreen = new ModSettingScreen("Minecraft Console v" + getVersion());
-      
+      try{
+         Class.forName("net.minecraft.src.GuiApiHelper", false, null);
+         net.minecraft.src.ModSettings settings = new net.minecraft.src.ModSettings("Console");
+         net.minecraft.src.ModSettingScreen settingScreen = new net.minecraft.src.ModSettingScreen("Minecraft Console");
+         settingScreen.setSingleColumn(true);
+         try {
+            Field[] declaredFields = GuiConsole.class.getDeclaredFields();
+            
+            for (Field field : declaredFields) {
+               if (Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers())) {
+                  try {
+                     if (!field.isAccessible()) {
+                        field.setAccessible(true);
+                     }
+                     if (field.getType().equals(Integer.TYPE)) {
+                        if(field.getName().startsWith("COLOR")){
+                           net.minecraft.src.WidgetSinglecolumn widget = new net.minecraft.src.WidgetSinglecolumn();
+                           widget.childDefaultWidth = 300;
+                           String niceName = field.getName().toLowerCase().replaceAll("_", " ").substring(6) + " color";
+                           widget.add(new de.matthiasmann.twl.Label(niceName + ":"));
+                           de.matthiasmann.twl.ColorSelector colorSelector = new de.matthiasmann.twl.ColorSelector(new de.matthiasmann.twl.model.ColorSpaceHSL());
+                           colorSelector.setShowHexEditField(true);
+                           colorSelector.setShowNativeAdjuster(false);
+                           colorSelector.setShowAlphaAdjuster(true);
+                           colorSelector.setShowRGBAdjuster(true);
+                           colorSelector.setShowPreview(true);
+                           colorSelector.setColor(new de.matthiasmann.twl.Color(field.getInt(null)));
+                           widget.add(colorSelector);
+                           widget.heightOverrideExceptions.put(colorSelector, 0);
+                           settingScreen.append(widget);
+                           settingScreen.widgetColumn.heightOverrideExceptions.put(widget, 0);
+                        }else{
+                           settings.addSetting(settingScreen, field.getName().toLowerCase().replaceAll("_", " "), field.getName(), field.getInt(null), 0, 0xFFFFFFFF);
+                        }                        
+                     }else if (field.getType().equals(Boolean.TYPE)) {
+                        settings.addSetting(settingScreen, field.getName().toLowerCase().replaceAll("_", " "), field.getName(), field.getBoolean(null));
+                     } else if (field.getType().equals(Long.TYPE)) {
+                        settings.addSetting(settingScreen, field.getName().toLowerCase().replaceAll("_", " "), field.getName(), field.getLong(null));
+                     } else if (field.getType().equals(String.class)) {
+                        settings.addSetting(settingScreen, field.getName().toLowerCase().replaceAll("_", " "), field.getName(), (String) field.get(null));
+                     } else if (field.getType().equals(Float.TYPE)) {
+                        settings.addSetting(settingScreen, field.getName().toLowerCase().replaceAll("_", " "), field.getName(), field.getFloat(null));
+                     }
+                  } catch (Exception e) {
+                     e.printStackTrace();
+                  }
+               }
+            }
+            
+         } catch (Exception e) {
+            e.printStackTrace();
+         }
+         
+         settings.load();
+      }catch(ClassNotFoundException exception){
+         System.out.println("DNE");
+      }
    }
    
    public String getVersion() {
