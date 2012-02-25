@@ -77,8 +77,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private int inputOffset;                                          // Position in the message string where the input goes
    private int sliderHeight;                                         // Height of the scroll bar
    private boolean isHighlighting;												// Keeps track of the highlight mouse click
-   private int initialHighlighting;												// Position of the mouse (at character) initially for highlighting
-   private int lastHighlighting;													// Position of the mouse (at character) at end of highlighting
+   private int[] initialHighlighting = new int[2];							// Position of the mouse (at character) initially for highlighting
+   private int[] lastHighlighting = new int[2];								// Position of the mouse (at character) at end of highlighting
    private boolean isSliding;                                        // Keeps track of the slider mouse click
    private int lastSliding;                                          // Position of mouse at last frame for slider
    private int initialSliding;                                       // Position of mouse initially for slider
@@ -388,8 +388,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       slider = 0;
       initialSliding = 0;
       isHighlighting = false;
-      lastHighlighting = 0;
-      initialHighlighting = 0;
+      clearHighlighting();
       cursor = 0;
       message = "";
       updateCounter = 0;
@@ -463,34 +462,38 @@ public class GuiConsole extends GuiScreen implements Runnable {
       // Control + ?      
       if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {                    
          if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
-            if (lastHighlighting != initialHighlighting) {
-               if (initialHighlighting < lastHighlighting)
-                  setClipboardString(message.substring(initialHighlighting, lastHighlighting));
+            if (lastHighlighting[1] != initialHighlighting[1]) {
+               if (initialHighlighting[1] < lastHighlighting[1])
+                  setClipboardString(message.substring(initialHighlighting[1], lastHighlighting[1]));
                else
-                  setClipboardString(message.substring(lastHighlighting, initialHighlighting));
+                  setClipboardString(message.substring(lastHighlighting[1], initialHighlighting[1]));
             }
          } else if (Keyboard.isKeyDown(Keyboard.KEY_V)) {
             paste();
          } else if (Keyboard.isKeyDown(Keyboard.KEY_X)) {
-            if (initialHighlighting != lastHighlighting) {
+            if (initialHighlighting[1] != lastHighlighting[1]) {
                String start, end;
-               if (initialHighlighting < lastHighlighting) {
-                  setClipboardString(message.substring(initialHighlighting, lastHighlighting));
-                  start = message.substring(0, initialHighlighting);
-                  end = message.substring(lastHighlighting);
+               if (initialHighlighting[1] < lastHighlighting[1]) {
+                  setClipboardString(message.substring(initialHighlighting[1], lastHighlighting[1]));
+                  start = message.substring(0, initialHighlighting[1]);
+                  end = message.substring(lastHighlighting[1]);
                } else {
-                  setClipboardString(message.substring(lastHighlighting, initialHighlighting));
-                  start = message.substring(0, lastHighlighting);
-                  end = message.substring(initialHighlighting);
+                  setClipboardString(message.substring(lastHighlighting[1], initialHighlighting[1]));
+                  start = message.substring(0, lastHighlighting[1]);
+                  end = message.substring(initialHighlighting[1]);
                }
 
                message = start + end;
-               initialHighlighting = lastHighlighting = 0;
+               initialHighlighting[0] = lastHighlighting[0] = -1;
+               initialHighlighting[1] = lastHighlighting[1] = 0;
             }
          } else if (Keyboard.isKeyDown(Keyboard.KEY_A)) {
             if (!EMACS_KEYS) {
-               initialHighlighting = 0;
-               lastHighlighting = message.length();
+               initialHighlighting[1] = 0;
+               lastHighlighting[1] = message.length();
+               lastHighlighting[0] = -1;
+               initialHighlighting[0] = -1; 
+               //TODO: Change to allow highlighting of all past messages
             } else {
                // go to beginning of line
                cursor = 0;
@@ -506,8 +509,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                setClipboardString(message.substring(cursor, message.length()));
              
                message = message.substring(0, cursor);
-               initialHighlighting = 0;
-               lastHighlighting = 0;
+               clearHighlighting();
             }
          } else if (Keyboard.isKeyDown(Keyboard.KEY_Y)) {
             if (EMACS_KEYS) {
@@ -549,24 +551,22 @@ public class GuiConsole extends GuiScreen implements Runnable {
                historyPosition = 0;
             }
 
-            initialHighlighting = 0;
-            lastHighlighting = 0;
+            clearHighlighting();
             break;
 
          case Keyboard.KEY_LEFT:
             // Moves the cursor left
             if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
-               if (initialHighlighting == lastHighlighting) {
-                  initialHighlighting = cursor;
-                  lastHighlighting = cursor;
+               if (initialHighlighting[1] == lastHighlighting[1]) {
+                  initialHighlighting[1] = cursor;
+                  lastHighlighting[1] = cursor;
                }
-               lastHighlighting--;
-               if (lastHighlighting < 0) {
-                  lastHighlighting = 0;
+               lastHighlighting[1]--;
+               if (lastHighlighting[1] < 0) {
+                  lastHighlighting[1] = 0; //TODO: When we get to end of line, decrement [0] if [0] > -1
                }
             } else {
-               initialHighlighting = 0;
-               lastHighlighting = 0;
+               clearHighlighting();
             }
             cursor--;
             break;
@@ -574,17 +574,16 @@ public class GuiConsole extends GuiScreen implements Runnable {
          case Keyboard.KEY_RIGHT:
             // Moves the cursor right
             if (Keyboard.isKeyDown(Keyboard.KEY_LSHIFT) || Keyboard.isKeyDown(Keyboard.KEY_RSHIFT)) {
-               if (initialHighlighting == lastHighlighting) {
-                  initialHighlighting = cursor;
-                  lastHighlighting = cursor;
+               if (initialHighlighting[1] == lastHighlighting[1]) {
+                  initialHighlighting[1] = cursor;
+                  lastHighlighting[1] = cursor;
                }
-               lastHighlighting++;
-               if (lastHighlighting > message.length()) {
-                  lastHighlighting = message.length();
+               lastHighlighting[1]++;
+               if (lastHighlighting[1] > message.length()) {
+                  lastHighlighting[1] = message.length(); //TODO When we get to the end of the line, increment [0] if [0] > -1
                }
             } else {
-               initialHighlighting = 0;
-               lastHighlighting = 0;
+               clearHighlighting();
             }
             cursor++;
             break;
@@ -593,16 +592,14 @@ public class GuiConsole extends GuiScreen implements Runnable {
             // Moves the history position down
             message = getInputHistory(--historyPosition);
             cursor = message.length();
-            initialHighlighting = 0;
-            lastHighlighting = 0;
+            clearHighlighting();
             break;
 
          case Keyboard.KEY_UP:
             // Moves the history position down
             message = getInputHistory(++historyPosition);
             cursor = message.length();
-            initialHighlighting = 0;
-            lastHighlighting = 0;
+            clearHighlighting();
             break;
 
          case Keyboard.KEY_DELETE:
@@ -655,7 +652,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          case Keyboard.KEY_BACK:
             // Backspace
             if (message.length() > 0) {
-               if (initialHighlighting == lastHighlighting) {
+               if (initialHighlighting[1] == lastHighlighting[1]) {
                   validateCursor();
                   String start = message.substring(0, cursor);
                   String end = message.substring(cursor, message.length());
@@ -667,19 +664,18 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   }
                } else {
                   String start, end;
-                  if (initialHighlighting < lastHighlighting) {
-                     start = message.substring(0, initialHighlighting);
-                     end = message.substring(lastHighlighting);
+                  if (initialHighlighting[1] < lastHighlighting[1]) {
+                     start = message.substring(0, initialHighlighting[1]);
+                     end = message.substring(lastHighlighting[1]);
                   } else {
-                     start = message.substring(0, lastHighlighting);
-                     end = message.substring(initialHighlighting);
+                     start = message.substring(0, lastHighlighting[1]);
+                     end = message.substring(initialHighlighting[1]);
                   }
-                  inputOffset -= Math.abs(lastHighlighting - initialHighlighting);
+                  inputOffset -= Math.abs(lastHighlighting[1] - initialHighlighting[1]);
                   if (inputOffset < 0) {
                      inputOffset = 0;
                   }
-                  initialHighlighting = 0;
-                  lastHighlighting = 0;
+                  clearHighlighting();
                   message = start + end;
                }
             }
@@ -698,7 +694,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   break;
                }
                if (ALLOWED_CHARACTERS.indexOf(key) >= 0 && this.message.length() < INPUT_MAX) {
-                  if (initialHighlighting == lastHighlighting) {
+                  if (initialHighlighting[1] == lastHighlighting[1]) {
                      validateCursor();
                      String start = message.substring(0, cursor);
                      String end = message.substring(cursor, message.length());
@@ -706,18 +702,17 @@ public class GuiConsole extends GuiScreen implements Runnable {
                      cursor++;
                   } else {
                      String start, end;
-                     if (initialHighlighting < lastHighlighting) {
-                        start = message.substring(0, initialHighlighting);
-                        end = message.substring(lastHighlighting);
+                     if (initialHighlighting[1] < lastHighlighting[1]) {
+                        start = message.substring(0, initialHighlighting[1]);
+                        end = message.substring(lastHighlighting[1]);
                      } else {
-                        start = message.substring(0, lastHighlighting);
-                        end = message.substring(initialHighlighting);
+                        start = message.substring(0, lastHighlighting[1]);
+                        end = message.substring(initialHighlighting[1]);
                      }
 
                      message = start + key + end;
                      cursor = start.length() + 1;
-                     initialHighlighting = 0;
-                     lastHighlighting = 0;
+                     clearHighlighting();
                   }
                }
             }
@@ -754,6 +749,17 @@ public class GuiConsole extends GuiScreen implements Runnable {
       return names;
    }
 
+   /**
+    * Changes the highlighting bounds so nothing is highlighted
+    */
+   
+   public void clearHighlighting(){
+      lastHighlighting[0] = -1;
+      lastHighlighting[1] = 0;
+      initialHighlighting[0] = -1;
+      initialHighlighting[1] = 0;
+   }
+   
    /**
     * Cleans a dirty string of any invalid characters then returns the clean
     * string to the user. Verifies that the string doesn't go beyond the maximum
@@ -889,16 +895,16 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * Makes sure the highlighting values are within the string bounds
     */
    private void validateHighlighting() {
-      if (lastHighlighting < 0) {
-         lastHighlighting = 0;
-      } else if (lastHighlighting > message.length()) {
-         lastHighlighting = message.length();
+      if (lastHighlighting[1] < 0) {
+         lastHighlighting[1] = 0;
+      } else if (lastHighlighting[1] > message.length()) {
+         lastHighlighting[1] = message.length();
       }
 
-      if (initialHighlighting < 0) {
-         initialHighlighting = 0;
-      } else if (initialHighlighting > message.length()) {
-         initialHighlighting = message.length();
+      if (initialHighlighting[1] < 0) {
+         initialHighlighting[1] = 0;
+      } else if (initialHighlighting[1] > message.length()) {
+         initialHighlighting[1] = message.length();
       }
    }
    
@@ -908,7 +914,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private void paste() {
       String clipboard = getClipboardString();
       if (clipboard != null) {
-         if (lastHighlighting == initialHighlighting) {
+         if (lastHighlighting[1] == initialHighlighting[1]) {
             String start = "";
             String end = "";
             validateCursor();
@@ -927,12 +933,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
             cursor = (start + clipboard).length() + 1;
          } else {
             String start, end;
-            if (initialHighlighting < lastHighlighting) {
-               start = message.substring(0, initialHighlighting);
-               end = message.substring(lastHighlighting);
+            if (initialHighlighting[1] < lastHighlighting[1]) {
+               start = message.substring(0, initialHighlighting[1]);
+               end = message.substring(lastHighlighting[1]);
             } else {
-               start = message.substring(0, lastHighlighting);
-               end = message.substring(initialHighlighting);
+               start = message.substring(0, lastHighlighting[1]);
+               end = message.substring(initialHighlighting[1]);
             }
 
             int limit = INPUT_MAX - message.length();
@@ -942,8 +948,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
             message = start + clipboard + end;
             cursor = (start + clipboard).length() + 1;
-            initialHighlighting = 0;
-            lastHighlighting = 0;
+            clearHighlighting();
          }
       }       
    }
@@ -954,23 +959,22 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private void delete() {
       // Delete
       if (message.length() > 0) {
-         if (initialHighlighting == lastHighlighting) {
+         if (initialHighlighting[1] == lastHighlighting[1]) {
             validateCursor();
             String start = message.substring(0, cursor);
             String end = message.substring(cursor, message.length());
             this.message = start + (end.length() > 0 ? end.substring(1) : end);
          } else {
             String start, end;
-            if (initialHighlighting < lastHighlighting) {
-               start = message.substring(0, initialHighlighting);
-               end = message.substring(lastHighlighting);
+            if (initialHighlighting[1] < lastHighlighting[1]) {
+               start = message.substring(0, initialHighlighting[1]);
+               end = message.substring(lastHighlighting[1]);
             } else {
-               start = message.substring(0, lastHighlighting);
-               end = message.substring(initialHighlighting);
+               start = message.substring(0, lastHighlighting[1]);
+               end = message.substring(initialHighlighting[1]);
             }
             message = start + end;
-            initialHighlighting = 0;
-            lastHighlighting = 0;
+            clearHighlighting();
          }
       }      
    }
@@ -998,14 +1002,14 @@ public class GuiConsole extends GuiScreen implements Runnable {
       TEXT_BOX = new int[] { textbox_minx, textbox_miny, textbox_maxx, textbox_maxy };
 
       // Input text highlighting
-      if (lastHighlighting != initialHighlighting) {
+      if (initialHighlighting[0] == -1 && lastHighlighting[0] == -1 && lastHighlighting[1] != initialHighlighting[1]) {
          int firstH, lastH; //First letter position, last letter position
-         if (initialHighlighting < lastHighlighting) {
-            firstH = initialHighlighting;
-            lastH = lastHighlighting;
+         if (initialHighlighting[1] < lastHighlighting[1]) {
+            firstH = initialHighlighting[1];
+            lastH = lastHighlighting[1];
          } else {
-            firstH = lastHighlighting;
-            lastH = initialHighlighting;
+            firstH = lastHighlighting[1];
+            lastH = initialHighlighting[1];
          }
 
          if (firstH < 0) {
@@ -1046,6 +1050,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
          drawRect(highlighting_minx, highlighting_miny, highlighting_maxx, highlighting_maxy, COLOR_TEXT_HIGHLIGHT);
       }
+      
 
       // Past messages - dialog
       int message_miny = miny + BORDERSIZE;
@@ -1062,6 +1067,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
       drawRect(MESSAGE_MINX, message_miny, MESSAGE_MAXX, message_maxy, COLOR_OUTPUT_BACKGROUND);
 
+      // Past messages - highlighting
+      
+      
       // Past messages - text
       int max = (message_maxy - message_miny) / (CHARHEIGHT-1);
       if (slider != 0) {
@@ -1254,10 +1262,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
             int charat = mouseAt(mousexCorrected, message.substring(startStringIndex)) + startStringIndex;
             if (message.length() < charat)
-               initialHighlighting = message.length();
+               initialHighlighting[1] = message.length();
             else
-               initialHighlighting = charat;
-            lastHighlighting = initialHighlighting;
+               initialHighlighting[1] = charat;
+            lastHighlighting[1] = initialHighlighting[1];
 
          }
 
@@ -1320,12 +1328,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
             charat = 0;
          }
          if (message.length() < charat) {
-            lastHighlighting = message.length();
+            lastHighlighting[1] = message.length();
          } else {
-            lastHighlighting = charat;
+            lastHighlighting[1] = charat;
          }
 
-         cursor = lastHighlighting;
+         cursor = lastHighlighting[1];
          validateCursor();
          validateOffset();
          if (!Mouse.isButtonDown(0)) {
