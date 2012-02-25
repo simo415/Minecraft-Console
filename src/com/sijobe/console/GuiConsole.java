@@ -151,6 +151,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    private static long POLL_DELAY = 20L;                             // The amount of time (in ms) to run the thread at
 
+   private static int LINES_PER_SCROLL = 1;                          // The number of lines to scroll in one scroll wheel click
+   
    private static int BORDERSIZE = 2;                                // Size of the border
    private static int SCREEN_PADDING_LEFT = 5;                       // Size of the screen padding - left
    private static int SCREEN_PADDING_TOP = 12;                       // Size of the screen padding - top
@@ -1061,7 +1063,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       drawRect(MESSAGE_MINX, message_miny, MESSAGE_MAXX, message_maxy, COLOR_OUTPUT_BACKGROUND);
 
       // Past messages - text
-      int max = (message_maxy - message_miny) / CHARHEIGHT;
+      int max = (message_maxy - message_miny) / (CHARHEIGHT-1);
       if (slider != 0) {
          slider = LINES.size() - slider > max ? (LINES.size() - slider < LINES.size() ? slider : 0) : LINES.size() - max;
       }
@@ -1074,7 +1076,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          int element = LINES.size() - 1 - i - slider;
          if (LINES.size() <= element)
             continue;
-         fontRenderer.drawString(LINES.elementAt(element), MESSAGE_MINX + BORDERSIZE, textbox_miny - CHARHEIGHT - BORDERSIZE - ((i + oversize) * 10), COLOR_TEXT_OUTPUT);
+         drawString(this.mc.fontRenderer, LINES.elementAt(element), MESSAGE_MINX + BORDERSIZE, textbox_miny - CHARHEIGHT + 1 - BORDERSIZE - ((i + oversize) * (CHARHEIGHT-1)), COLOR_TEXT_OUTPUT);
       }
 
       // Scroll - background
@@ -1117,17 +1119,17 @@ public class GuiConsole extends GuiScreen implements Runnable {
       // Input
       validateCursor();
       validateOffset();
-      fontRenderer.drawString(input, textbox_minx + BORDERSIZE, textbox_miny + 1, COLOR_INPUT_TEXT);
+      drawString(this.mc.fontRenderer, input, textbox_minx + BORDERSIZE, textbox_miny + 1, COLOR_INPUT_TEXT);
 
       // Titlebar
       drawRect(maxx / 2, 0, maxx, miny, COLOR_BASE);
 
       // Title
-      fontRenderer.drawString(TITLE, (maxx / 2) + BORDERSIZE, BORDERSIZE, COLOR_TEXT_TITLE);
+      drawString(this.mc.fontRenderer, TITLE, (maxx / 2) + BORDERSIZE, BORDERSIZE, COLOR_TEXT_TITLE);
 
       // Exit button
       drawRect(maxx - BORDERSIZE - 10, BORDERSIZE, maxx - BORDERSIZE, miny, COLOR_EXIT_BUTTON);
-      fontRenderer.drawString("X", maxx - BORDERSIZE - 7, BORDERSIZE + 2, COLOR_EXIT_BUTTON_TEXT);
+      drawString(this.mc.fontRenderer, "X", maxx - BORDERSIZE - 7, BORDERSIZE + 2, COLOR_EXIT_BUTTON_TEXT);
       EXIT = new int[] { maxx - BORDERSIZE - 10, BORDERSIZE, maxx - BORDERSIZE, miny };
 
       super.drawScreen(mousex, mousey, f);
@@ -1284,7 +1286,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    protected void mouseMovedOrUp(int mousex, int mousey, int button) {
       int wheel = Mouse.getDWheel();
       if (wheel != 0) {
-         slider += wheel / 120;
+         slider += wheel/120 * LINES_PER_SCROLL;
       }
 
       // Moves the slider position
