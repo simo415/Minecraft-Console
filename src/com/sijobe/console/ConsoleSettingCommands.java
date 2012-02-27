@@ -36,7 +36,7 @@ public class ConsoleSettingCommands implements ConsoleListener {
       try {
          if (input.startsWith("@set ")) {
             String cmd = input.substring(5).trim();
-            String name = cmd.substring(0, cmd.indexOf(" ")).trim();
+            String name = cmd.substring(0, cmd.indexOf(" ")).trim().toUpperCase();
             String value = cmd.substring(cmd.indexOf(" ")).trim();
             if (!set(name, value)) {
                GuiConsole.getInstance().addOutputMessage("Unable to set the specified setting \"" + name + "\"");
@@ -44,21 +44,24 @@ public class ConsoleSettingCommands implements ConsoleListener {
                GuiConsole.getInstance().addOutputMessage("\"" + name + "\" = " + value);
             }
          } else if (input.startsWith("@get ")) {
-            String name = input.substring(5).trim();
+            String name = input.substring(5).trim().toUpperCase();
             GuiConsole.getInstance().addOutputMessage(get(name));
          } else if (input.startsWith("@list")) {
-            String list = list();
-
+            String searchTerm = "";
+            if (input.trim().startsWith("@list ")) {
+               searchTerm = input.substring(6).trim().toUpperCase();
+            }
+            String list = list(searchTerm);
             while (list.length() > 0) {
                GuiConsole.getInstance().addOutputMessage(list.substring(0, list.indexOf("\n")));
                list = list.substring(list.indexOf("\n") + 1);
             }
          } else if (input.startsWith("@save")) {
-            GuiConsole.getInstance().writeSettings(GuiConsole.class, new File(GuiConsole.MOD_DIR, "gui.properties"));
+            save();
          } else if (input.startsWith("@help")) {
             GuiConsole.getInstance().addOutputMessage("@set [property] [new value]  -  Sets the propery to a new value");
             GuiConsole.getInstance().addOutputMessage("@get [property]  -  Gets the value of the specified propery");
-            GuiConsole.getInstance().addOutputMessage("@list  -  Gets a list of all properties");
+            GuiConsole.getInstance().addOutputMessage("@list (search term) -  Gets a list of all properties. Optionally  searches for a setting.");
             GuiConsole.getInstance().addOutputMessage("@save  -  Saves the properties to the properties file");
          } else {
             return true;
@@ -76,7 +79,7 @@ public class ConsoleSettingCommands implements ConsoleListener {
     * @param value - The value to set the setting
     * @return True is returned when the specified setting was successfully set, false otherwise
     */
-   private boolean set(String settingName, String property) {
+   public static boolean set(String settingName, String property) {
       try {
          Field[] declaredFields = GuiConsole.class.getDeclaredFields();
          for (Field field : declaredFields) {
@@ -142,7 +145,7 @@ public class ConsoleSettingCommands implements ConsoleListener {
     * @param settingName - The name of the setting, non case-sensitive
     * @return The value of the setting
     */
-   private String get(String settingName) {
+   public static String get(String settingName) {
       Properties p = new Properties();
       try {
          Field[] declaredFields = GuiConsole.class.getDeclaredFields();
@@ -183,7 +186,6 @@ public class ConsoleSettingCommands implements ConsoleListener {
          } else {
             return "\"" + settingName + "\"" + " does not exist";
          }
-
       } catch (Exception e) {
          e.printStackTrace();
       }
@@ -193,18 +195,35 @@ public class ConsoleSettingCommands implements ConsoleListener {
    /**
     * @return List of the names of all of the properties
     */
-   public String list() {
+   public static String list(String searchTerm) {
       String result = "";
       Field[] declaredFields = GuiConsole.class.getDeclaredFields();
+      boolean resultFound = false;
 
       for (Field field : declaredFields) {
-         result += field.getName() + "\n";
+         if (Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers())) {
+            if (searchTerm.equals("")) {
+               result += field.getName() + "\n";
+               resultFound = true;
+            }else if(field.getName().contains(searchTerm)){
+               result += field.getName() + "\n";
+               resultFound = true;
+            }
+         }
+      }
+      
+      if(!resultFound){
+         result = "No results found.\n";
       }
 
       result.trim();
       return result;
    }
 
+   public static void save(){
+      GuiConsole.getInstance().writeSettings(GuiConsole.class, new File(GuiConsole.MOD_DIR, "gui.properties"));
+   }
+   
    @Override
    public void processOutput(String output) {
    }

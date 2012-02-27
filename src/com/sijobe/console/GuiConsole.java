@@ -12,6 +12,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -19,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.src.ChatAllowedCharacters;
@@ -122,6 +125,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static double CHARWIDTH = 6;                              // Maximum character width - used to quickly determine line length
 
    private static boolean CLOSE_ON_SUBMIT = false;                   // Closes the GUI after the input has been submit
+   private static boolean SCROLL_TO_BOTTOM_ON_SUBMIT = true;         // Moves the scroll bar to the bottom when input is sumbitted
    private static boolean CLOSE_WITH_OPEN_KEY = true;                // Closes the GUI if the open key pressed again
 
    private static int INPUT_MAX = 150;                               // Maximum input size on the console
@@ -460,7 +464,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    protected void keyTyped(char key, int id) {
       // Multi key validation
       // Control + ?      
-      if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {                    
+      if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {
          if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
             if (lastHighlighting[1] != initialHighlighting[1]) {
                if (initialHighlighting[1] < lastHighlighting[1])
@@ -492,7 +496,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                initialHighlighting[1] = 0;
                lastHighlighting[1] = message.length();
                lastHighlighting[0] = -1;
-               initialHighlighting[0] = -1; 
+               initialHighlighting[0] = -1;
                //TODO: Change to allow highlighting of all past messages
             } else {
                // go to beginning of line
@@ -507,7 +511,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             if (EMACS_KEYS) {
                // Cut to end of line
                setClipboardString(message.substring(cursor, message.length()));
-             
+
                message = message.substring(0, cursor);
                clearHighlighting();
             }
@@ -515,7 +519,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             if (EMACS_KEYS) {
                paste();
             }
-         } else if ( Keyboard.isKeyDown(Keyboard.KEY_D)) {
+         } else if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
             if (EMACS_KEYS) {
                delete();
             }
@@ -542,15 +546,19 @@ public class GuiConsole extends GuiScreen implements Runnable {
             if (s.length() > 0) {
                addInputMessage(s);
             }
+
             if (CLOSE_ON_SUBMIT) {
                mc.displayGuiScreen(null);
-            } else {
-               message = "";
-               cursor = 0;
-               inputOffset = 0;
-               historyPosition = 0;
             }
 
+            if (SCROLL_TO_BOTTOM_ON_SUBMIT) {
+               slider = 0;
+            }
+
+            message = "";
+            cursor = 0;
+            inputOffset = 0;
+            historyPosition = 0;
             clearHighlighting();
             break;
 
@@ -607,43 +615,104 @@ public class GuiConsole extends GuiScreen implements Runnable {
             break;
 
          case Keyboard.KEY_TAB:
-            List<String> users = getPlayerNames();
-            if (users != null) {
-               String str = message;
-               if (tabPosition != 0) {
-                  str = tabWord;
-                  if (tabPosition < 0) {
-                     tabPosition = 0;
-                  }
-               } else if (message.contains(" ")) {
-                  // Gets the last word in input
-                  str = message.substring(message.lastIndexOf(" ") + 1, message.length());
+            if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
+               String[] str = message.split(" ");
+               
+               String match;
+               
+               if(tabPosition == 0){
+                  match = str[1];
+               }else{
+                  match = tabWord;
                }
-               boolean matched = false;
-               List<String> matches = new ArrayList<String>();
-               int numMatches = 0;
-               for (int i = 0; i < users.size(); i++) {
-                  String user = users.get(i);// % users.size());
-                  // Tests if a username starts with the last input word (str)
-                  if (user.toLowerCase().startsWith(str.toLowerCase())) {
-                     matched = true;
-                     matches.add(user);
-                     tabWord = str;
-                     numMatches++;
+               
+               if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + str[1].length()) {
+                  ArrayList<String> tempList = new ArrayList<String>(Arrays.asList(ConsoleSettingCommands.list("").split("\n")));
+                  ArrayList<String> list = new ArrayList<String>();
+                  for (int i = 0; i < tempList.size(); i++) {
+                     if (tempList.get(i).startsWith(match.toUpperCase())) {
+                        list.add(tempList.get(i)); //Can't delete from a list in a loop; workaround
+                     }
                   }
-               }
+                  
+                  if (list.size() > 0) {
+                     if (tabPosition < 0) {
+                        tabPosition = 0;
+                     }
+                     
+                     tabWord = match;
 
-               if (matched) {
-                  if (message.contains(" ")) {
-                     message = message.substring(0, message.lastIndexOf(" ") + 1) + matches.get(tabPosition);
-                  } else {
-                     message = matches.get(tabPosition);
+                     message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + str[1].length(), message.length());
+                     cursor = str[0].length() + 1 + list.get(tabPosition).length();
+
+                     tabPosition++;
+                     if (tabPosition >= list.size()) {
+                        tabPosition = -1;
+                     }
                   }
-                  // Sets the cursor to the end of the input
-                  cursor = message.length();
-                  tabPosition++;
-                  if (tabPosition >= numMatches) {
-                     tabPosition = -1;
+               }
+            } else {
+               List<String> users = getPlayerNames();
+               int word = 0;
+               int pos = 0;
+               if (users != null) {
+                  String str = message;
+                  if (tabPosition != 0) {
+                     str = tabWord;
+                     if (tabPosition < 0) {
+                        tabPosition = 0;
+                     }
+
+                  }else if (message.contains(" ")) {
+                     // Gets the word to tab-complete
+                     String[] words = message.split(" ");
+                     int[] spaceNums = new int[words.length];
+
+                     for (int i = 0; i < words.length; i++) {
+                        int spacesBefore = 0; //I had to do this instead of indexOf so we can still tab complete if it isn't the first instance of the word in the string 
+                        if (pos != 0) {
+                           String temp = ("." + message.substring(pos)).trim(); //Added dot to keep beginning spaces
+                           temp = temp.substring(1); //get rid of dot
+                           spacesBefore = temp.length() - temp.trim().length(); //length with spaces - length without spaces.
+                        }
+                        pos += words[i].length() + spacesBefore;
+                        if (cursor <= pos) {
+                           word = i;
+                           pos -= words[i].length(); //Pos now represents the beginning of the word to replace
+                           break;
+                        }
+                     }
+
+                     str = words[word];
+                  }
+                  boolean matched = false;
+                  List<String> matches = new ArrayList<String>();
+                  int numMatches = 0;
+                  for (int i = 0; i < users.size(); i++) {
+                     String user = users.get(i);// % users.size());
+                     // Tests if a username starts with the last input word (str)
+                     if (user.toLowerCase().startsWith(str.toLowerCase())) {
+                        matched = true;
+                        matches.add(user);
+                        tabWord = str;
+                        numMatches++;
+                     }
+                  }
+
+                  if (matched) {
+                     if (message.contains(" ")) {
+                        String replace = message.split(" ")[word];
+                        message = message.substring(0, pos) + matches.get(tabPosition) + message.substring(pos + replace.length(), message.length());
+                        cursor = pos + matches.get(tabPosition).length();
+                     } else {
+                        message = matches.get(tabPosition);
+                        cursor = message.length();
+                     }
+
+                     tabPosition++;
+                     if (tabPosition >= numMatches) {
+                        tabPosition = -1;
+                     }
                   }
                }
             }
@@ -752,14 +821,14 @@ public class GuiConsole extends GuiScreen implements Runnable {
    /**
     * Changes the highlighting bounds so nothing is highlighted
     */
-   
-   public void clearHighlighting(){
+
+   public void clearHighlighting() {
       lastHighlighting[0] = -1;
       lastHighlighting[1] = 0;
       initialHighlighting[0] = -1;
       initialHighlighting[1] = 0;
    }
-   
+
    /**
     * Cleans a dirty string of any invalid characters then returns the clean
     * string to the user. Verifies that the string doesn't go beyond the maximum
@@ -907,7 +976,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          initialHighlighting[1] = message.length();
       }
    }
-   
+
    /**
     * Paste clipboard at cursor position.
     */
@@ -950,10 +1019,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
             cursor = (start + clipboard).length() + 1;
             clearHighlighting();
          }
-      }       
+      }
    }
-   
-   /** 
+
+   /**
     * Delete the next character.
     */
    private void delete() {
@@ -976,7 +1045,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             message = start + end;
             clearHighlighting();
          }
-      }      
+      }
    }
 
    /**
@@ -1050,7 +1119,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
          drawRect(highlighting_minx, highlighting_miny, highlighting_maxx, highlighting_maxy, COLOR_TEXT_HIGHLIGHT);
       }
-      
 
       // Past messages - dialog
       int message_miny = miny + BORDERSIZE;
@@ -1068,10 +1136,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
       drawRect(MESSAGE_MINX, message_miny, MESSAGE_MAXX, message_maxy, COLOR_OUTPUT_BACKGROUND);
 
       // Past messages - highlighting
-      
-      
+
       // Past messages - text
-      int max = (message_maxy - message_miny) / (CHARHEIGHT-1);
+      int max = (message_maxy - message_miny) / (CHARHEIGHT - 1);
       if (slider != 0) {
          slider = LINES.size() - slider > max ? (LINES.size() - slider < LINES.size() ? slider : 0) : LINES.size() - max;
       }
@@ -1084,7 +1151,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          int element = LINES.size() - 1 - i - slider;
          if (LINES.size() <= element)
             continue;
-         drawString(this.mc.fontRenderer, LINES.elementAt(element), MESSAGE_MINX + BORDERSIZE, textbox_miny - CHARHEIGHT + 1 - BORDERSIZE - ((i + oversize) * (CHARHEIGHT-1)), COLOR_TEXT_OUTPUT);
+         drawString(this.mc.fontRenderer, LINES.elementAt(element), MESSAGE_MINX + BORDERSIZE, textbox_miny - CHARHEIGHT + 1 - BORDERSIZE - ((i + oversize) * (CHARHEIGHT - 1)), COLOR_TEXT_OUTPUT);
       }
 
       // Scroll - background
@@ -1246,6 +1313,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             lastSliding = mousey;
             initialSliding = slider;
          } else if (hitTest(mousex, mousey, TEXT_BOX)) {
+            tabPosition = 0;
             isHighlighting = true;
             int mousexCorrected = mousex - TEXT_BOX[0] - BORDERSIZE;
             int startStringIndex = 0;
@@ -1294,7 +1362,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    protected void mouseMovedOrUp(int mousex, int mousey, int button) {
       int wheel = Mouse.getDWheel();
       if (wheel != 0) {
-         slider += wheel/120 * LINES_PER_SCROLL;
+         slider += wheel / 120 * LINES_PER_SCROLL;
       }
 
       // Moves the slider position
