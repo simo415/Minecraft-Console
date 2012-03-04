@@ -18,10 +18,11 @@ package net.minecraft.src;
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *  
  */
-import com.sijobe.console.GuiConsole;
+import net.minecraft.client.Minecraft;
 
 import org.lwjgl.input.Keyboard;
-import net.minecraft.client.Minecraft;
+
+import com.sijobe.console.GuiConsole;
 
 public class mod_Console extends BaseMod {
    
@@ -30,11 +31,11 @@ public class mod_Console extends BaseMod {
    public mod_Console() {
       GuiConsole.getInstance();
       openKey = new KeyBinding("Console", Keyboard.KEY_BACKSLASH);
-      ModLoader.RegisterKey(this, openKey, false);
+      ModLoader.registerKey(this, openKey, false);
    }
    
    @Override
-   public void KeyboardEvent(KeyBinding event) {
+   public void keyboardEvent(KeyBinding event) {
       Minecraft game = ModLoader.getMinecraftInstance();
       if (game.currentScreen == null) {
          game.displayGuiScreen(GuiConsole.getInstance());

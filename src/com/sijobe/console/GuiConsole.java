@@ -29,7 +29,7 @@ import net.minecraft.src.ChatLine;
 import net.minecraft.src.EntityClientPlayerMP;
 import net.minecraft.src.FontRenderer;
 import net.minecraft.src.GuiIngame;
-import net.minecraft.src.GuiSavingLevelString;
+import net.minecraft.src.GuiPlayerInfo;
 import net.minecraft.src.GuiScreen;
 import net.minecraft.src.KeyBinding;
 import net.minecraft.src.ModLoader;
@@ -808,9 +808,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
       if (isMultiplayerMode() && mc.thePlayer instanceof EntityClientPlayerMP) {
          names = new ArrayList<String>();
          NetClientHandler netclienthandler = ((EntityClientPlayerMP) mc.thePlayer).sendQueue;
-         List<GuiSavingLevelString> tempList = netclienthandler.playerNames;
-         for (GuiSavingLevelString string : tempList) {
-            names.add(string.name);
+         List tempList = netclienthandler.playerNames;
+         for (GuiPlayerInfo info : (List<GuiPlayerInfo>)tempList) {
+            names.add(info.name);
          }
       } else {
          names = null;
