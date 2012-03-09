@@ -35,11 +35,11 @@ public class mod_Console extends BaseMod {
    public mod_Console() {
       GuiConsole.getInstance();
       openKey = new KeyBinding("Console", Keyboard.KEY_BACKSLASH);
-      ModLoader.RegisterKey(this, openKey, false);
+      ModLoader.registerKey(this, openKey, false);
    }
    
    @Override
-   public void KeyboardEvent(KeyBinding event) {
+   public void keyboardEvent(KeyBinding event) {
       Minecraft game = ModLoader.getMinecraftInstance();
       if (game.currentScreen == null) {
          game.displayGuiScreen(GuiConsole.getInstance());
@@ -49,7 +49,8 @@ public class mod_Console extends BaseMod {
    @Override
    public void load() {
       try{
-         Class.forName("net.minecraft.src.GuiApiHelper", false, null);
+         Class.forName("net.minecraft.src.GuiApiHelper", false, null); //Checks if GUIAPI exists
+         
          net.minecraft.src.ModSettings settings = new net.minecraft.src.ModSettings("Console");
          net.minecraft.src.ModSettingScreen settingScreen = new net.minecraft.src.ModSettingScreen("Minecraft Console");
          settingScreen.setSingleColumn(true);

@@ -26,7 +26,7 @@ import net.minecraft.src.ChatLine;
 import net.minecraft.src.EntityClientPlayerMP;
 import net.minecraft.src.FontRenderer;
 import net.minecraft.src.GuiIngame;
-import net.minecraft.src.GuiSavingLevelString;
+import net.minecraft.src.GuiPlayerInfo;
 import net.minecraft.src.GuiScreen;
 import net.minecraft.src.KeyBinding;
 import net.minecraft.src.ModLoader;
@@ -459,7 +459,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    protected void keyTyped(char key, int id) {
       // Multi key validation
       // Control + ?      
-      if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {                    
+      if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {
          if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
             if (lastHighlighting != initialHighlighting) {
                if (initialHighlighting < lastHighlighting)
@@ -502,7 +502,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             if (EMACS_KEYS) {
                // Cut to end of line
                setClipboardString(message.substring(cursor, message.length()));
-             
+
                message = message.substring(0, cursor);
                initialHighlighting = 0;
                lastHighlighting = 0;
@@ -511,7 +511,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             if (EMACS_KEYS) {
                paste();
             }
-         } else if ( Keyboard.isKeyDown(Keyboard.KEY_D)) {
+         } else if (Keyboard.isKeyDown(Keyboard.KEY_D)) {
             if (EMACS_KEYS) {
                delete();
             }
@@ -742,9 +742,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
       if (isMultiplayerMode() && mc.thePlayer instanceof EntityClientPlayerMP) {
          names = new ArrayList<String>();
          NetClientHandler netclienthandler = ((EntityClientPlayerMP) mc.thePlayer).sendQueue;
-         List<GuiSavingLevelString> tempList = netclienthandler.playerNames;
-         for (GuiSavingLevelString string : tempList) {
-            names.add(string.name);
+         List tempList = netclienthandler.playerNames;
+         for (GuiPlayerInfo info : (List<GuiPlayerInfo>) tempList) {
+            names.add(info.name);
          }
       } else {
          names = null;
@@ -899,7 +899,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          initialHighlighting = message.length();
       }
    }
-   
+
    /**
     * Paste clipboard at cursor position.
     */
@@ -943,10 +943,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
             initialHighlighting = 0;
             lastHighlighting = 0;
          }
-      }       
+      }
    }
-   
-   /** 
+
+   /**
     * Delete the next character.
     */
    private void delete() {
@@ -970,7 +970,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             initialHighlighting = 0;
             lastHighlighting = 0;
          }
-      }      
+      }
    }
 
    /**
