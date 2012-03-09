@@ -617,15 +617,15 @@ public class GuiConsole extends GuiScreen implements Runnable {
          case Keyboard.KEY_TAB:
             if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
                String[] str = message.split(" ");
-               
+
                String match;
-               
-               if(tabPosition == 0){
+
+               if (tabPosition == 0) {
                   match = str[1];
-               }else{
+               } else {
                   match = tabWord;
                }
-               
+
                if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + str[1].length()) {
                   ArrayList<String> tempList = new ArrayList<String>(Arrays.asList(ConsoleSettingCommands.list("").split("\n")));
                   ArrayList<String> list = new ArrayList<String>();
@@ -634,12 +634,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
                         list.add(tempList.get(i)); //Can't delete from a list in a loop; workaround
                      }
                   }
-                  
+
                   if (list.size() > 0) {
                      if (tabPosition < 0) {
                         tabPosition = 0;
                      }
-                     
+
                      tabWord = match;
 
                      message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + str[1].length(), message.length());
@@ -663,7 +663,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                         tabPosition = 0;
                      }
 
-                  }else if (message.contains(" ")) {
+                  } else if (message.contains(" ")) {
                      // Gets the word to tab-complete
                      String[] words = message.split(" ");
                      int[] spaceNums = new int[words.length];
@@ -809,8 +809,20 @@ public class GuiConsole extends GuiScreen implements Runnable {
          names = new ArrayList<String>();
          NetClientHandler netclienthandler = ((EntityClientPlayerMP) mc.thePlayer).sendQueue;
          List tempList = netclienthandler.playerNames;
-         for (GuiPlayerInfo info : (List<GuiPlayerInfo>)tempList) {
-            names.add(info.name);
+         for (GuiPlayerInfo info : (List<GuiPlayerInfo>) tempList) {
+            String name = info.name; //There were some problems with bukkit plugins adding prefixes or suffixes to the names list. This cleans the strings.
+            Pattern pattern = Pattern.compile("[\\[[\\{[\\(]]]+?.*?[\\][\\}[\\)]]]"); //Get rid of everything between the brackets (), [], or {} 
+            Matcher matcher = pattern.matcher(name);
+            matcher.replaceAll("");
+            String cleanName = "";
+            for (int i = 0; i < name.length(); i++) { //Get rid of every invalid character for minecraft usernames
+               if (Character.isLetterOrDigit(name.charAt(i)) || name.charAt(i) == '_') {
+                  cleanName += name.charAt(i);
+               }
+            }
+            if (!cleanName.equals("")) {
+               names.add(cleanName);
+            }
          }
       } else {
          names = null;
