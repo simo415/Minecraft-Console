@@ -816,6 +816,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
             matcher.replaceAll("");
             String cleanName = "";
             for (int i = 0; i < name.length(); i++) { //Get rid of every invalid character for minecraft usernames
+               if(name.charAt(i) == '§'){ //Gets rid of color codes
+                  i++;
+                  continue;
+               }
+               
                if (Character.isLetterOrDigit(name.charAt(i)) || name.charAt(i) == '_') {
                   cleanName += name.charAt(i);
                }
