@@ -762,7 +762,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   mc.displayGuiScreen(null);
                   break;
                }
-               if (ALLOWED_CHARACTERS.indexOf(key) >= 0 && this.message.length() < INPUT_MAX) {
+               if (ALLOWED_CHARACTERS.indexOf(key) >= 0 && this.message.length() < INPUT_MAX && !(message.startsWith("/") && message.length() > INPUT_SERVER_MAX - 1)) {
                   if (initialHighlighting[1] == lastHighlighting[1]) {
                      validateCursor();
                      String start = message.substring(0, cursor);
@@ -816,11 +816,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
             matcher.replaceAll("");
             String cleanName = "";
             for (int i = 0; i < name.length(); i++) { //Get rid of every invalid character for minecraft usernames
-               if(name.charAt(i) == '§'){ //Gets rid of color codes
+               if (name.charAt(i) == '§') { //Gets rid of color codes
                   i++;
                   continue;
                }
-               
+
                if (Character.isLetterOrDigit(name.charAt(i)) || name.charAt(i) == '_') {
                   cleanName += name.charAt(i);
                }
@@ -1472,10 +1472,27 @@ public class GuiConsole extends GuiScreen implements Runnable {
       }
 
       if (post) {
-         if (isMultiplayerMode()) { // Verifies that each line doesnt pass the maximum server length
+         if (isMultiplayerMode()) { // Verifies that each line doesn't pass the maximum server length
+            int lastLen = 0;
             for (int i = 0; i <= message.length() / INPUT_SERVER_MAX; i++) {
-               int end = (i + 1) * INPUT_SERVER_MAX > message.length() ? message.length() : (i + 1) * INPUT_SERVER_MAX;
-               mc.thePlayer.sendChatMessage(message.substring(i * INPUT_SERVER_MAX, end));
+               System.out.println(lastLen);
+               int end = (lastLen + INPUT_SERVER_MAX) > message.length() ? message.length() : (lastLen + INPUT_SERVER_MAX);
+               if (message.length() > INPUT_SERVER_MAX && message.substring(lastLen, end).length() > 10) {
+                  for (int j = 1; j <= 10; j++) {
+                     if (message.charAt(end - j) == ' ') { //Wrap at space if it's within 10 characters
+                        end = end - j;
+                        break;
+                     }
+                  }
+               }
+               
+               System.out.println(lastLen + " " + end + " " + message.length() + " " + INPUT_SERVER_MAX);
+               mc.thePlayer.sendChatMessage(message.substring(lastLen, end));
+               
+               if(message.length() == INPUT_SERVER_MAX){
+                  break; //Fix for displaying an extra line when length is exactly at the limit
+               }
+               lastLen = end;
             }
          } else {
             mc.thePlayer.sendChatMessage(message);
