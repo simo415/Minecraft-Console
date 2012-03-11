@@ -813,7 +813,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             String name = info.name; //There were some problems with bukkit plugins adding prefixes or suffixes to the names list. This cleans the strings.
             Pattern pattern = Pattern.compile("[\\[[\\{[\\(]]]+?.*?[\\][\\}[\\)]]]"); //Get rid of everything between the brackets (), [], or {} 
             Matcher matcher = pattern.matcher(name);
-            matcher.replaceAll("");
+            name = matcher.replaceAll("");
             String cleanName = "";
             for (int i = 0; i < name.length(); i++) { //Get rid of every invalid character for minecraft usernames
                if (name.charAt(i) == '§') { //Gets rid of color codes
