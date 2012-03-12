@@ -373,7 +373,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
       }*/
       int chars = (int) ((MESSAGE_MAXX - MESSAGE_MINX) / CHARWIDTH);
-      String parts[] = message.split("(?<=\\G.{" + (chars) + "})");
+      String parts[] = message.split("(?<=\\G.{" + (chars) + "})"); //String parts[] = message.split("(?<=\\G.{" + (chars-10) + ",}? )");
       for (int i = 0; i < parts.length; i++) {
          LINES.add(parts[i]);
       }
@@ -1475,9 +1475,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
          if (isMultiplayerMode()) { // Verifies that each line doesn't pass the maximum server length
             int lastLen = 0;
             for (int i = 0; i <= message.length() / INPUT_SERVER_MAX; i++) {
-               System.out.println(lastLen);
                int end = (lastLen + INPUT_SERVER_MAX) > message.length() ? message.length() : (lastLen + INPUT_SERVER_MAX);
-               if (message.length() > INPUT_SERVER_MAX && message.substring(lastLen, end).length() > 10) {
+               if (message.length() > INPUT_SERVER_MAX && message.substring(lastLen, end).length() >= INPUT_SERVER_MAX) {
                   for (int j = 1; j <= 10; j++) {
                      if (message.charAt(end - j) == ' ') { //Wrap at space if it's within 10 characters
                         end = end - j;
@@ -1486,7 +1485,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   }
                }
                
-               System.out.println(lastLen + " " + end + " " + message.length() + " " + INPUT_SERVER_MAX);
                mc.thePlayer.sendChatMessage(message.substring(lastLen, end));
                
                if(message.length() == INPUT_SERVER_MAX){
