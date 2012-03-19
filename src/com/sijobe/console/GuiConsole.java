@@ -318,6 +318,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
     */
    public void buildLines() {
       LINES = new Vector<String>();
+      
       for (String message : MESSAGES) {
          addLine(message);
       }
@@ -333,6 +334,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       if (LINES == null) {
          buildLines();
       }
+
       if (message == null) {
          return;
       }
@@ -377,15 +379,18 @@ public class GuiConsole extends GuiScreen implements Runnable {
       int chars = (int) ((MESSAGE_MAXX - MESSAGE_MINX) / CHARWIDTH);
       String parts[] = message.split("(?<=\\G.{0," + (chars) + "}? )");
       String temp = "";
+      int linesAdded = 0;
       for (int i = 0; i < parts.length; i++) {
          if (parts[i].length() > chars) {
             String parts2[] = parts[i].split("(?<=\\G.{" + temp.length() + "," + (chars) + "}+)");
             LINES.add(temp + parts2[0]);
+            linesAdded++;
             for (int j = 1; j < parts2.length; j++) {
                if (parts2[j].length() < chars) {
                   temp = parts2[j];
                } else {
                   LINES.add(parts2[j]);
+                  linesAdded++;
                }
             }
          } else {
@@ -393,14 +398,21 @@ public class GuiConsole extends GuiScreen implements Runnable {
                temp += parts[i];
             } else {
                LINES.add(temp);
+               linesAdded++;
                temp = parts[i];
             }
          }
 
          if (i + 1 >= parts.length) {
             LINES.add(temp);
+            linesAdded++;
          }
       }
+      
+     /* if(initialHighlighting[0] > -1 && lastHighlighting[0] > -1){
+         initialHighlighting[0] -= linesAdded;
+         lastHighlighting[0] -= linesAdded;
+      }*/
    }
 
    /**
@@ -706,31 +718,39 @@ public class GuiConsole extends GuiScreen implements Runnable {
             if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
                String[] str = message.split(" ");
 
-               String match;
+               String match = "";
 
-               if (tabPosition == 0) {
-                  match = str[1];
-               } else {
-                  match = tabWord;
+               if (str.length > 1) {
+                  if (tabPosition == 0) {
+                     match = str[1];
+                  } else {
+                     match = tabWord;
+                  }
+               }
+               if (tabPosition < 0) {
+                  tabPosition = 0;
                }
 
-               if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + str[1].length()) {
+               System.out.println(match.replace("", "."));
+               if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + match.length() || tabPosition > 0) {
                   ArrayList<String> tempList = new ArrayList<String>(Arrays.asList(ConsoleSettingCommands.list("").split("\n")));
                   ArrayList<String> list = new ArrayList<String>();
                   for (int i = 0; i < tempList.size(); i++) {
                      if (tempList.get(i).startsWith(match.toUpperCase())) {
                         list.add(tempList.get(i)); //Can't delete from a list in a loop; workaround
+                        System.out.println(tempList.get(i));
                      }
                   }
 
                   if (list.size() > 0) {
-                     if (tabPosition < 0) {
-                        tabPosition = 0;
-                     }
 
                      tabWord = match;
 
-                     message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + str[1].length(), message.length());
+                     if (tabPosition == 0) {
+                        message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + match.length(), message.length());
+                     } else if (tabPosition > 0) {
+                        message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + list.get(tabPosition - 1).length(), message.length());
+                     }
                      cursor = str[0].length() + 1 + list.get(tabPosition).length();
 
                      tabPosition++;
@@ -743,8 +763,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
                List<String> users = getPlayerNames();
                int word = 0;
                int pos = 0;
+               String str = "";
                if (users != null) {
-                  String str = message;
+                  str = message;
                   if (tabPosition != 0) {
                      str = tabWord;
                      if (tabPosition < 0) {
@@ -756,27 +777,31 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   if (message.contains(" ")) {
                      // Gets the word to tab-complete
                      String[] words = message.split(" ");
-                     int[] spaceNums = new int[words.length];
-                     for (int i = 0; i < words.length; i++) {
-                        int spacesBefore = 0; //I had to do this instead of indexOf so we can still tab complete if it isn't the first instance of the word in the string 
-                        if (pos != 0) {
-                           String temp = ("." + message.substring(pos)).trim(); //Added dot to keep beginning spaces
-                           temp = temp.substring(1); //get rid of dot
-                           spacesBefore = temp.length() - temp.trim().length(); //length with spaces - length without spaces.
+                     if (words.length > 0) {
+                        int[] spaceNums = new int[words.length];
+                        for (int i = 0; i < words.length; i++) {
+                           int spacesBefore = 0; //I had to do this instead of indexOf so we can still tab complete if it isn't the first instance of the word in the string 
+                           if (pos != 0) {
+                              String temp = ("." + message.substring(pos)).trim(); //Added dot to keep beginning spaces
+                              temp = temp.substring(1); //get rid of dot
+                              spacesBefore = temp.length() - temp.trim().length(); //length with spaces - length without spaces.
+                           }
+                           pos += words[i].length() + spacesBefore;
+                           if (cursor <= pos) {
+                              word = i;
+                              pos -= words[i].length(); //Pos now represents the beginning of the word to replace
+                              break;
+                           }
                         }
-                        pos += words[i].length() + spacesBefore;
-                        if (cursor <= pos) {
-                           word = i;
-                           pos -= words[i].length(); //Pos now represents the beginning of the word to replace
-                           break;
-                        }
-                     }
 
-                     str = words[word];
+                        str = words[word];
+                     } else {
+                        str = "";
+                     }
                   }
 
                   boolean matched = false;
-                  List<String> matches = new ArrayList<String>();
+                  ArrayList<String> matches = new ArrayList<String>();
                   int numMatches = 0;
                   for (int i = 0; i < users.size(); i++) {
                      String user = users.get(i);
@@ -790,8 +815,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   }
 
                   if (matched) {
+                     if (tabPosition >= numMatches) { //If a player leaves in-between tabs tabPosition might be out of bounds
+                        tabPosition = 0;
+                     }
+
                      if (message.contains(" ")) {
-                        String replace = message.split(" ")[word];
+                        String replace = str;
                         message = message.substring(0, pos) + matches.get(tabPosition) + message.substring(pos + replace.length(), message.length());
                         cursor = pos + matches.get(tabPosition).length();
                      } else {
@@ -800,9 +829,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
                      }
 
                      tabPosition++;
-                     if (tabPosition >= numMatches) {
-                        tabPosition = -1;
-                     }
+                  }
+                  if (tabPosition >= numMatches) {
+                     tabPosition = -1;
                   }
                }
             }
@@ -1806,6 +1835,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                MESSAGES.remove(0);
                rebuildLines = true;
             }
+            
             // Empties input history list when it hits maximum size
             while (INPUT_HISTORY.size() > INPUT_HISTORY_MAX) {
                INPUT_HISTORY.remove(0);
