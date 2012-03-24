@@ -318,7 +318,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
     */
    public void buildLines() {
       LINES = new Vector<String>();
-      Vector<String> temp = (Vector<String>)MESSAGES.clone(); //There were problems with the run method modifying MESSAGES while this loop works. See issue #17
+      Vector<String> temp = (Vector<String>) MESSAGES.clone(); //There were problems with the run method modifying MESSAGES while this loop works. See issue #17
       for (String message : temp) {
          addLine(message);
       }
@@ -408,11 +408,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
             linesAdded++;
          }
       }
-      
-     /* if(initialHighlighting[0] > -1 && lastHighlighting[0] > -1){
-         initialHighlighting[0] -= linesAdded;
-         lastHighlighting[0] -= linesAdded;
-      }*/
+
+      /* if(initialHighlighting[0] > -1 && lastHighlighting[0] > -1){
+          initialHighlighting[0] -= linesAdded;
+          lastHighlighting[0] -= linesAdded;
+       }*/
    }
 
    /**
@@ -731,14 +731,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   tabPosition = 0;
                }
 
-               System.out.println(match.replace("", "."));
                if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + match.length() || tabPosition > 0) {
                   ArrayList<String> tempList = new ArrayList<String>(Arrays.asList(ConsoleSettingCommands.list("").split("\n")));
                   ArrayList<String> list = new ArrayList<String>();
                   for (int i = 0; i < tempList.size(); i++) {
                      if (tempList.get(i).startsWith(match.toUpperCase())) {
                         list.add(tempList.get(i)); //Can't delete from a list in a loop; workaround
-                        System.out.println(tempList.get(i));
                      }
                   }
 
@@ -778,7 +776,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
                      // Gets the word to tab-complete
                      String[] words = message.split(" ");
                      if (words.length > 0) {
-                        int[] spaceNums = new int[words.length];
                         for (int i = 0; i < words.length; i++) {
                            int spacesBefore = 0; //I had to do this instead of indexOf so we can still tab complete if it isn't the first instance of the word in the string 
                            if (pos != 0) {
@@ -829,9 +826,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
                      }
 
                      tabPosition++;
-                  }
-                  if (tabPosition >= numMatches) {
-                     tabPosition = -1;
+                     if (tabPosition >= numMatches) {
+                        tabPosition = -1;
+                     }
                   }
                }
             }
@@ -1283,6 +1280,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
             highlighting_maxx += fontRenderer.getStringWidth("!");
          }
 
+         if (highlighting_maxx > TEXT_BOX[2]) {
+            highlighting_maxx = TEXT_BOX[2];
+         }
+
          drawRect(highlighting_minx, highlighting_miny, highlighting_maxx, highlighting_maxy, COLOR_TEXT_HIGHLIGHT);
       }
 
@@ -1575,6 +1576,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             int mousexCorrected = mousex - HISTORY[0] - BORDERSIZE;
             int mouseyCorrected = mousey - HISTORY[1] - BORDERSIZE;
             int lineAt = mouseyCorrected / (CHARHEIGHT - 1) + LINES.size() - linesDisplayed - slider;
+            
             if (lineAt > LINES.size()) {
                lineAt = LINES.size() - maxDisplayedLines + lineAt;
                if (lineAt < 0) {
@@ -1835,7 +1837,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                MESSAGES.remove(0);
                rebuildLines = true;
             }
-            
+
             // Empties input history list when it hits maximum size
             while (INPUT_HISTORY.size() > INPUT_HISTORY_MAX) {
                INPUT_HISTORY.remove(0);
