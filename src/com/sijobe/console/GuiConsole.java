@@ -318,8 +318,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
     */
    public void buildLines() {
       LINES = new Vector<String>();
-      
-      for (String message : MESSAGES) {
+      Vector<String> temp = (Vector<String>)MESSAGES.clone(); //There were problems with the run method modifying MESSAGES while this loop works. See issue #17
+      for (String message : temp) {
          addLine(message);
       }
       rebuildLines = false;
