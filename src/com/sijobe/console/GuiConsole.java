@@ -1577,7 +1577,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             int mouseyCorrected = mousey - HISTORY[1] - BORDERSIZE;
             int lineAt = mouseyCorrected / (CHARHEIGHT - 1) + LINES.size() - linesDisplayed - slider;
             
-            if (lineAt > LINES.size()) {
+            if (lineAt >= LINES.size()) {
                lineAt = LINES.size() - maxDisplayedLines + lineAt;
                if (lineAt < 0) {
                   lineAt = 0;
