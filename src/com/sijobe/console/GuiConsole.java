@@ -1588,19 +1588,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             initialHighlighting[1] = charAt;
          }
 
-         if (this.mc.ingameGUI.field_933_a != null) {
-            if (this.message.length() > 0 && !this.message.endsWith(" ")) {
-               this.message = this.message + " ";
-            }
-
-            this.message = this.message + this.mc.ingameGUI.field_933_a;
-            byte var4 = 100;
-            if (this.message.length() > var4) {
-               this.message = this.message.substring(0, var4);
-            }
-         } else {
-            super.mouseClicked(mousex, mousey, button);
-         }
+         super.mouseClicked(mousex, mousey, button);
       }
    }
 
