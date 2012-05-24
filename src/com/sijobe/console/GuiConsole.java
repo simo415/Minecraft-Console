@@ -935,7 +935,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             name = matcher.replaceAll("");
             String cleanName = "";
             for (int i = 0; i < name.length(); i++) { //Get rid of every invalid character for minecraft usernames
-               if (name.charAt(i) == 'ยง') { //Gets rid of color codes
+               if (name.charAt(i) == 'ง') { //Gets rid of color codes
                   i++;
                   continue;
                }
@@ -1571,23 +1571,13 @@ public class GuiConsole extends GuiScreen implements Runnable {
          } else if (hitTest(mousex, mousey, HISTORY)) {
             tabPosition = 0;
             isHighlighting = true;
-            int maxDisplayedLines = (HISTORY[3] - HISTORY[1]) / (CHARHEIGHT - 1);
-            int linesDisplayed = LINES.size() >= maxDisplayedLines ? maxDisplayedLines : LINES.size();
             int mousexCorrected = mousex - HISTORY[0] - BORDERSIZE;
-            int mouseyCorrected = mousey - HISTORY[1] - BORDERSIZE;
-            int lineAt = mouseyCorrected / (CHARHEIGHT - 1) + LINES.size() - linesDisplayed - slider;
-            
-            if (lineAt >= LINES.size()) {
-               lineAt = LINES.size() - maxDisplayedLines + lineAt;
-               if (lineAt < 0) {
-                  lineAt = 0;
-               }
-            }
+            int lineAt = correctYlineAt(mousey);
             initialHighlighting[0] = lineAt;
             int charAt = mouseAt(mousexCorrected, LINES.get(lineAt));
             initialHighlighting[1] = charAt;
          }
-
+         
          super.mouseClicked(mousex, mousey, button);
       }
    }
@@ -1648,28 +1638,35 @@ public class GuiConsole extends GuiScreen implements Runnable {
          } else if (hitTest(mousex, mousey, HISTORY)) {
             tabPosition = 0;
             isHighlighting = true;
-            int maxDisplayedLines = (HISTORY[3] - HISTORY[1]) / (CHARHEIGHT - 1);
-            int linesDisplayed = LINES.size() >= maxDisplayedLines ? maxDisplayedLines : LINES.size();
             int mousexCorrected = mousex - HISTORY[0] - BORDERSIZE;
-            int mouseyCorrected = mousey - HISTORY[1] - BORDERSIZE;
-            int lineAt = mouseyCorrected / (CHARHEIGHT - 1) + LINES.size() - linesDisplayed - slider;
-            if (lineAt > LINES.size()) {
-               lineAt = LINES.size() - maxDisplayedLines + lineAt;
-               if (lineAt < 0) {
-                  lineAt = 0;
-               }
-            }
+            int lineAt = correctYlineAt(mousey);
             lastHighlighting[0] = lineAt;
             int charAt = mouseAt(mousexCorrected, LINES.get(lineAt));
             lastHighlighting[1] = charAt;
-
          }
          if (!Mouse.isButtonDown(0)) {
             isHighlighting = false;
          }
       }
    }
-
+   
+   private int correctYlineAt(int mousey)
+   {
+	   int maxDisplayedLines = (HISTORY[3] - HISTORY[1]) / (CHARHEIGHT - 1);
+	   int linesDisplayed = LINES.size() >= maxDisplayedLines ? maxDisplayedLines : LINES.size();
+	   int mouseyCorrected = mousey - HISTORY[1] - BORDERSIZE;
+	   int lineAt = mouseyCorrected / (CHARHEIGHT - 1) + LINES.size() - linesDisplayed - slider;
+       
+       if (lineAt >= LINES.size()) {
+          lineAt = LINES.size() - maxDisplayedLines + lineAt;
+          if (lineAt < 0) {
+             lineAt = 0;
+          }
+       }
+       
+       return lineAt;
+   }
+   
    /**
     * Returns true if the GUI is open
     * 
