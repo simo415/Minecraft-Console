@@ -3,6 +3,7 @@ Minecraft Console Mod
 
 ### [Latest Version](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_latest.zip)
 ### [Latest Build](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_Snapshot.zip)
+### [Latest Build - (Vayner)](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console.zip)
 
 Also found on the [Minecraft Forums](http://www.minecraftforum.net/topic/680231-100-minecraft-console-v11-updated/)
 
