@@ -178,7 +178,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int COLOR_OUTPUT_BACKGROUND = 0xBB999999;          // Colour of the output background
    private static int COLOR_INPUT_BACKGROUND = 0xBB999999;           // Colour of the input background
 
-   public static final String VERSION = "1.2";                       // Version of the mod
+   public static final String VERSION = "1.2.1";                       // Version of the mod
    private static String TITLE = "Console";                          // Title of the console
 
    private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
@@ -190,6 +190,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static GuiConsole INSTANCE;                               // Instance of the class for singleton pattern
    
    private static boolean EMACS_KEYS = false;                        // Use emacs keybindings
+   private static int AUTOCOMPLETE_KEY = Keyboard.KEY_TAB;           // Autocomlete keybinding
    
    /* @formatter:on */
 
@@ -606,9 +607,130 @@ public class GuiConsole extends GuiScreen implements Runnable {
          return;
       }
 
-      if (id != Keyboard.KEY_TAB) {
+      if (id != AUTOCOMPLETE_KEY) {
          tabPosition = 0;
          tabWord = "";
+      }
+      else
+      {
+    	  clearHighlighting();
+          if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
+             String[] str = message.split(" ");
+
+             String match = "";
+
+             if (str.length > 1) {
+                if (tabPosition == 0) {
+                   match = str[1];
+                } else {
+                   match = tabWord;
+                }
+             }
+             if (tabPosition < 0) {
+                tabPosition = 0;
+             }
+
+             if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + match.length() || tabPosition > 0) {
+                ArrayList<String> tempList = new ArrayList<String>(Arrays.asList(ConsoleSettingCommands.list("").split("\n")));
+                ArrayList<String> list = new ArrayList<String>();
+                for (int i = 0; i < tempList.size(); i++) {
+                   if (tempList.get(i).startsWith(match.toUpperCase())) {
+                      list.add(tempList.get(i)); //Can't delete from a list in a loop; workaround
+                   }
+                }
+
+                if (list.size() > 0) {
+
+                   tabWord = match;
+
+                   if (tabPosition == 0) {
+                      message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + match.length(), message.length());
+                   } else if (tabPosition > 0) {
+                      message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + list.get(tabPosition - 1).length(), message.length());
+                   }
+                   cursor = str[0].length() + 1 + list.get(tabPosition).length();
+
+                   tabPosition++;
+                   if (tabPosition >= list.size()) {
+                      tabPosition = -1;
+                   }
+                }
+             }
+          } else {
+             List<String> users = getPlayerNames();
+             int word = 0;
+             int pos = 0;
+             String str = "";
+             if (users != null) {
+                str = message;
+                if (tabPosition != 0) {
+                   str = tabWord;
+                   if (tabPosition < 0) {
+                      tabPosition = 0;
+                   }
+
+                }
+
+                if (message.contains(" ")) {
+                   // Gets the word to tab-complete
+                   String[] words = message.split(" ");
+                   if (words.length > 0) {
+                      for (int i = 0; i < words.length; i++) {
+                         int spacesBefore = 0; //I had to do this instead of indexOf so we can still tab complete if it isn't the first instance of the word in the string 
+                         if (pos != 0) {
+                            String temp = ("." + message.substring(pos)).trim(); //Added dot to keep beginning spaces
+                            temp = temp.substring(1); //get rid of dot
+                            spacesBefore = temp.length() - temp.trim().length(); //length with spaces - length without spaces.
+                         }
+                         pos += words[i].length() + spacesBefore;
+                         if (cursor <= pos) {
+                            word = i;
+                            pos -= words[i].length(); //Pos now represents the beginning of the word to replace
+                            break;
+                         }
+                      }
+
+                      str = words[word];
+                   } else {
+                      str = "";
+                   }
+                }
+
+                boolean matched = false;
+                ArrayList<String> matches = new ArrayList<String>();
+                int numMatches = 0;
+                for (int i = 0; i < users.size(); i++) {
+                   String user = users.get(i);
+                   // Tests if a username starts with the last input word (str)
+                   if (user.toLowerCase().startsWith(str.toLowerCase())) {
+                      matched = true;
+                      matches.add(user);
+                      tabWord = str;
+                      numMatches++;
+                   }
+                }
+
+                if (matched) {
+                   if (tabPosition >= numMatches) { //If a player leaves in-between tabs tabPosition might be out of bounds
+                      tabPosition = 0;
+                   }
+
+                   if (message.contains(" ")) {
+                      String replace = str;
+                      message = message.substring(0, pos) + matches.get(tabPosition) + message.substring(pos + replace.length(), message.length());
+                      cursor = pos + matches.get(tabPosition).length();
+                   } else {
+                      message = matches.get(tabPosition);
+                      cursor = message.length();
+                   }
+
+                   tabPosition++;
+                   if (tabPosition >= numMatches) {
+                      tabPosition = -1;
+                   }
+                }
+             }
+          }
       }
 
       // Single key validation
@@ -714,124 +836,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             break;
 
          case Keyboard.KEY_TAB:
-            clearHighlighting();
-            if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
-               String[] str = message.split(" ");
-
-               String match = "";
-
-               if (str.length > 1) {
-                  if (tabPosition == 0) {
-                     match = str[1];
-                  } else {
-                     match = tabWord;
-                  }
-               }
-               if (tabPosition < 0) {
-                  tabPosition = 0;
-               }
-
-               if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + match.length() || tabPosition > 0) {
-                  ArrayList<String> tempList = new ArrayList<String>(Arrays.asList(ConsoleSettingCommands.list("").split("\n")));
-                  ArrayList<String> list = new ArrayList<String>();
-                  for (int i = 0; i < tempList.size(); i++) {
-                     if (tempList.get(i).startsWith(match.toUpperCase())) {
-                        list.add(tempList.get(i)); //Can't delete from a list in a loop; workaround
-                     }
-                  }
-
-                  if (list.size() > 0) {
-
-                     tabWord = match;
-
-                     if (tabPosition == 0) {
-                        message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + match.length(), message.length());
-                     } else if (tabPosition > 0) {
-                        message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + list.get(tabPosition - 1).length(), message.length());
-                     }
-                     cursor = str[0].length() + 1 + list.get(tabPosition).length();
-
-                     tabPosition++;
-                     if (tabPosition >= list.size()) {
-                        tabPosition = -1;
-                     }
-                  }
-               }
-            } else {
-               List<String> users = getPlayerNames();
-               int word = 0;
-               int pos = 0;
-               String str = "";
-               if (users != null) {
-                  str = message;
-                  if (tabPosition != 0) {
-                     str = tabWord;
-                     if (tabPosition < 0) {
-                        tabPosition = 0;
-                     }
-
-                  }
-
-                  if (message.contains(" ")) {
-                     // Gets the word to tab-complete
-                     String[] words = message.split(" ");
-                     if (words.length > 0) {
-                        for (int i = 0; i < words.length; i++) {
-                           int spacesBefore = 0; //I had to do this instead of indexOf so we can still tab complete if it isn't the first instance of the word in the string 
-                           if (pos != 0) {
-                              String temp = ("." + message.substring(pos)).trim(); //Added dot to keep beginning spaces
-                              temp = temp.substring(1); //get rid of dot
-                              spacesBefore = temp.length() - temp.trim().length(); //length with spaces - length without spaces.
-                           }
-                           pos += words[i].length() + spacesBefore;
-                           if (cursor <= pos) {
-                              word = i;
-                              pos -= words[i].length(); //Pos now represents the beginning of the word to replace
-                              break;
-                           }
-                        }
-
-                        str = words[word];
-                     } else {
-                        str = "";
-                     }
-                  }
-
-                  boolean matched = false;
-                  ArrayList<String> matches = new ArrayList<String>();
-                  int numMatches = 0;
-                  for (int i = 0; i < users.size(); i++) {
-                     String user = users.get(i);
-                     // Tests if a username starts with the last input word (str)
-                     if (user.toLowerCase().startsWith(str.toLowerCase())) {
-                        matched = true;
-                        matches.add(user);
-                        tabWord = str;
-                        numMatches++;
-                     }
-                  }
-
-                  if (matched) {
-                     if (tabPosition >= numMatches) { //If a player leaves in-between tabs tabPosition might be out of bounds
-                        tabPosition = 0;
-                     }
-
-                     if (message.contains(" ")) {
-                        String replace = str;
-                        message = message.substring(0, pos) + matches.get(tabPosition) + message.substring(pos + replace.length(), message.length());
-                        cursor = pos + matches.get(tabPosition).length();
-                     } else {
-                        message = matches.get(tabPosition);
-                        cursor = message.length();
-                     }
-
-                     tabPosition++;
-                     if (tabPosition >= numMatches) {
-                        tabPosition = -1;
-                     }
-                  }
-               }
-            }
+            //moved
             break;
 
          case Keyboard.KEY_BACK:
