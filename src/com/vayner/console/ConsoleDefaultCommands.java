@@ -36,6 +36,7 @@ public class ConsoleDefaultCommands {
       List<String> commands = new ArrayList();
 
       try {
+         Class helper = Class.forName ("net.minecraft.src.PlayerHelper");
          Set SPC_cmd = PlayerHelper.CMDS.keySet();
          for (Object entry : SPC_cmd) {
             if(entry instanceof String)
@@ -45,10 +46,10 @@ public class ConsoleDefaultCommands {
          }
 
          commands.addAll(worldEditCommands);
-      } catch (Exception e) {
-         e.printStackTrace();
+      } catch (ClassNotFoundException e) {
+         System.out.println("Single Player Commands 'PlayerHelper.class' not found, unable to retrive commands for SPC");
       }
-
+      
       Collections.sort(commands);
 
       return commands;
@@ -93,8 +94,14 @@ public class ConsoleDefaultCommands {
       vanillaServerCommands.add("/save-on");
       vanillaServerCommands.add("/say");
       vanillaServerCommands.add("/stop");
-      vanillaServerCommands.add("/time set");
-      vanillaServerCommands.add("/time add");
+      
+      
+      vanillaServerCommands.add("/time");
+      vanillaServerCommands.add("set");
+      
+      //vanillaServerCommands.add("/time set");
+      //vanillaServerCommands.add("/time add");
+      
       vanillaServerCommands.add("/toggledownfall");
       vanillaServerCommands.add("/tp");
 

@@ -8,25 +8,24 @@ import java.lang.reflect.Modifier;
 import java.util.Properties;
 
 /**
- * 
+ *
  * @author simo_415
- * 
+ *
  *         This program is free software: you can redistribute it and/or modify
  *         it under the terms of the GNU Lesser General Public License as published by
  *         the Free Software Foundation, either version 3 of the License, or
  *         (at your option) any later version.
- * 
+ *
  *         This program is distributed in the hope that it will be useful,
  *         but WITHOUT ANY WARRANTY; without even the implied warranty of
  *         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *         GNU Lesser General Public License for more details.
- * 
+ *
  *         You should have received a copy of the GNU General Public License
  *         along with this program. If not, see <http://www.gnu.org/licenses/>.
- * 
+ *
  */
 public class ConsoleSettingCommands implements ConsoleListener {
-
    @Override
    public boolean processInput(String input) {
       // Check that the input is a command
@@ -74,7 +73,7 @@ public class ConsoleSettingCommands implements ConsoleListener {
 
    /**
     * Sets the specified setting with the specified value
-    * 
+    *
     * @param settingName - The name of the setting, non case-sensitive
     * @param value - The value to set the setting
     * @return True is returned when the specified setting was successfully set, false otherwise
@@ -141,7 +140,7 @@ public class ConsoleSettingCommands implements ConsoleListener {
 
    /**
     * Gets the value of the specified setting
-    * 
+    *
     * @param settingName - The name of the setting, non case-sensitive
     * @return The value of the setting
     */
@@ -211,7 +210,7 @@ public class ConsoleSettingCommands implements ConsoleListener {
             }
          }
       }
-      
+
       if(!resultFound){
          result = "No results found.\n";
       }
@@ -223,7 +222,7 @@ public class ConsoleSettingCommands implements ConsoleListener {
    public static void save(){
       GuiConsole.getInstance().writeSettings(GuiConsole.class, new File(GuiConsole.MOD_DIR, "gui.properties"));
    }
-   
+
    @Override
    public void processOutput(String output) {
    }
