@@ -28,7 +28,8 @@ Install
 -------
 
  1. Install [modloader](http://www.minecraftforum.net/topic/75440-v11-risugamis-mods-everything-updated/)
- 2. Install [Minecraft Console](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_latest.zip)
+ 2. Install [Minecraft Console](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_latest.zip)
+ 3. (optional) Install [Single Player Commands](http://www.minecraftforum.net/topic/94310-125-single-player-commands-v322-official-download/)
  
 Both mods can be installed with the instructions found in the modloader thread.
 However, best practise for version 1.2 an up is to put the Minecraft_Console.zip in the .minecraft/mods/ folder
