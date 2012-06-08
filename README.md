@@ -1,9 +1,8 @@
 Minecraft Console Mod
 =====================
 
-### [Latest Version](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_latest.zip)
-### [Latest Build](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_Snapshot.zip)
-### [Latest Build - (Vayner)](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console.zip)
+### [Latest Version](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_latest.zip)
+### [Latest Build](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console.zip)
 
 Also found on the [Minecraft Forums](http://www.minecraftforum.net/topic/680231-100-minecraft-console-v11-updated/)
 
@@ -32,6 +31,7 @@ Install
  2. Install [Minecraft Console](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_latest.zip)
  
 Both mods can be installed with the instructions found in the modloader thread.
+However, best practise for version 1.2 an up is to put the Minecraft_Console.zip in the .minecraft/mods/ folder
 
 >*Windows:*
 >
@@ -106,9 +106,10 @@ Examples:
 
 Downloads
 ------------
- - [*Latest version*](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_latest.zip)
+ - [*Latest version*](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_latest.zip)
 
-
+ - [Version 1.2.1](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_1.2.1.zip)
+ - [Version 1.2 fixed](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_1.2.zip)
  - [Version 1.2](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_1.2.zip)
  - [Version 1.1](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_1.1.zip)
  - [Version 1.0](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_1.0.zip)
