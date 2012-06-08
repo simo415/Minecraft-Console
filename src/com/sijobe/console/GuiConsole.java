@@ -40,6 +40,8 @@ import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
+import com.vayner.console.ConsoleChatCommands;
+
 /**
  * @formatter:off
  *                TODO: P1 - Only save logs for the current world
@@ -51,25 +53,24 @@ import org.lwjgl.opengl.GL11;
  *                TODO: P2 - Custom text color support. Holding CTRL then type a number will set the text to that color [0-f] - (0-15)
  *                TODO: P1 - Add ability to disable settings loader (in code) and ability to reset the settings ingame
  *                TODO: P3 - Dynamic settings screen, configure any setting in an easy to use GUI
- * 
+ *
  * @author simo_415
- * 
+ *
  *         This program is free software: you can redistribute it and/or modify
  *         it under the terms of the GNU Lesser General Public License as published by
  *         the Free Software Foundation, either version 3 of the License, or
  *         (at your option) any later version.
- * 
+ *
  *         This program is distributed in the hope that it will be useful,
  *         but WITHOUT ANY WARRANTY; without even the implied warranty of
  *         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
  *         GNU Lesser General Public License for more details.
- * 
+ *
  *         You should have received a copy of the GNU General Public License
  *         along with this program. If not, see <http://www.gnu.org/licenses/>.
  * @formatter:on
  */
 public class GuiConsole extends GuiScreen implements Runnable {
-
    /* @formatter:off */
    protected String message;                                         // The current user input
    protected String input;                                           // The current input line to draw (includes prefix)
@@ -78,9 +79,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private int cursor;                                               // Position of the cursor
    private int inputOffset;                                          // Position in the message string where the input goes
    private int sliderHeight;                                         // Height of the scroll bar
-   private boolean isHighlighting;												// Keeps track of the highlight mouse click
-   private int[] initialHighlighting = new int[2];							// Position of the mouse (at character) initially for highlighting
-   private int[] lastHighlighting = new int[2];								// Position of the mouse (at character) at end of highlighting
+   private boolean isHighlighting;                                   // Keeps track of the highlight mouse click
+   private int[] initialHighlighting = new int[2];                   // Position of the mouse (at character) initially for highlighting
+   private int[] lastHighlighting = new int[2];                      // Position of the mouse (at character) at end of highlighting
    private boolean isSliding;                                        // Keeps track of the slider mouse click
    private int lastSliding;                                          // Position of mouse at last frame for slider
    private int initialSliding;                                       // Position of mouse initially for slider
@@ -92,7 +93,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private SimpleDateFormat sdf;                                     // The date format for logs
 
    private int tabPosition;                                          // Where you have tabbed to through user list
+   private int tabWordPos;                                           //start place of tabbed word
    private String tabWord;                                           // The current tabbed word
+   private String tabMessage;                                        // The current tabbed message
 
    private volatile HashMap<String,String> keyBindings;              // All the current key bindings
    private volatile List<Integer> keyDown;                           // List of all the keys currently held down
@@ -102,7 +105,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private long lastWrite;                                           // The time of the last log write
 
    private static final String ALLOWED_CHARACTERS;                   // A list of permitted characters
-   
+
    @Deprecated
    private static int MESSAGE_MAXX;                                  // Maximum size of the message GUI
    @Deprecated
@@ -122,7 +125,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int[] EXIT;                                        // Poor implementation to keep track of drawn exit button
    private static int[] TEXT_BOX;												// Poor implementation to keep track of drawn text box
    private static int[] HISTORY;                                     // Poor implementation to keep track of drawn history field
-   
+
    private static int CHARHEIGHT = 10;                               // Character height - used to quickly determine number of lines per view
    private static double CHARWIDTH = 6;                              // Maximum character width - used to quickly determine line length
 
@@ -133,7 +136,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int INPUT_MAX = 150;                               // Maximum input size on the console
    private static int INPUT_SERVER_MAX = 100;                        // Maximum server message size - splits the input to this length if it is longer
    private static int INPUT_HISTORY_MAX = 50;                        // Maximum size of stored input history
-   private static String INPUT_PREFIX = "> ";                        // Prefix for all input messages 
+   private static String INPUT_PREFIX = "> ";                        // Prefix for all input messages
 
    private static boolean PRINT_INPUT = true;                        // Prints the input
    private static boolean PRINT_OUTPUT = true;                       // Prints the output
@@ -146,11 +149,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
    public static final int LOGGING_OUTPUT = 1;                       // Logging level - Output
    private static int LOGGING = LOGGING_INPUT + LOGGING_OUTPUT;      // What is currently being logged
    private static long LOG_WRITE_INTERVAL = 1000L;                   // How often (in ms) the logs are written to file
-                                                                     // The log line separator
+   // The log line separator
    private static String LINE_BREAK = System.getProperty("line.separator");
 
    private static String DATE_FORMAT_LOG = "yyyy-MM-dd hh:mm:ss: ";  // The date format according to SimpleDateFormat
-                                                                     // The date format filename (uses SimpleDateFormat)
+   // The date format filename (uses SimpleDateFormat)
    private static String DATE_FORMAT_FILENAME = "yyyyMMdd_hhmmss'.log'";
 
    private static int OUTPUT_MAX = 200;                              // Maximum number of lines in the output
@@ -158,7 +161,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static long POLL_DELAY = 20L;                             // The amount of time (in ms) to run the thread at
 
    private static int LINES_PER_SCROLL = 1;                          // The number of lines to scroll in one scroll wheel click
-   
+
    private static int BORDERSIZE = 2;                                // Size of the border
    private static int SCREEN_PADDING_LEFT = 5;                       // Size of the screen padding - left
    private static int SCREEN_PADDING_TOP = 12;                       // Size of the screen padding - top
@@ -178,7 +181,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int COLOR_OUTPUT_BACKGROUND = 0xBB999999;          // Colour of the output background
    private static int COLOR_INPUT_BACKGROUND = 0xBB999999;           // Colour of the input background
 
-   public static final String VERSION = "1.2.1";                       // Version of the mod
+   public static final String VERSION = "1.2.1b";                    // Version of the mod
    private static String TITLE = "Console";                          // Title of the console
 
    private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
@@ -188,10 +191,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static File LOG_DIR;                                      // Log directory
 
    private static GuiConsole INSTANCE;                               // Instance of the class for singleton pattern
-   
+
    private static boolean EMACS_KEYS = false;                        // Use emacs keybindings
    private static int AUTOCOMPLETE_KEY = Keyboard.KEY_TAB;           // Autocomlete keybinding
-   
+
    /* @formatter:on */
 
    /**
@@ -205,7 +208,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       LOG_DIR = new File(Minecraft.getMinecraftDir(), LOG_PATH);
       ALLOWED_CHARACTERS = ChatAllowedCharacters.allowedCharacters;
       MESSAGES = new Vector<String>();
-      MESSAGES.add("\2476Minecraft Console version " + VERSION + " written by simo_415");
+      MESSAGES.add("\2476Minecraft Console version \2474" + VERSION + "\2476 written by \2472simo_415\2476, updated by \2473tellefma");
       MESSAGES.add("");
       INPUT_HISTORY = new Vector<String>();
       LISTENERS = new Vector<ConsoleListener>();
@@ -252,7 +255,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * SingleTon pattern to get an instance of the GUI
-    * 
+    *
     * @return An instance of the GUI
     */
    public static GuiConsole getInstance() {
@@ -264,7 +267,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Generates a hashmap containing all of the configured key bindings from file
-    * 
+    *
     * @return A hashmap containing all the keybindings
     */
    public HashMap<String, String> generateKeyBindings() {
@@ -285,7 +288,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    /**
     * Grabs the inGameGui chat list if it can be grabbed and returns true if
     * the list is not null
-    * 
+    *
     * @return True is returned when the list is retrieved and not null
     */
    private boolean getInGameGuiList() {
@@ -328,7 +331,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Adds a line to the line render list
-    * 
+    *
     * @param message - The line message to add
     */
    public void addLine(String message) {
@@ -418,7 +421,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Called when Minecraft initialises the GUI
-    * 
+    *
     * @see net.minecraft.src.GuiScreen#initGui()
     */
    @Override
@@ -450,7 +453,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Called when the GUI is closed by Minecraft - useful for cleanup
-    * 
+    *
     * @see net.minecraft.src.GuiScreen#onGuiClosed()
     */
    @Override
@@ -472,7 +475,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Called to update the screen on frame
-    * 
+    *
     * @see net.minecraft.src.GuiScreen#updateScreen()
     */
    @Override
@@ -494,13 +497,13 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Called when a key is typed, handles all input into the console
-    * 
+    *
     * @see net.minecraft.src.GuiScreen#keyTyped(char, int)
     */
    @Override
    protected void keyTyped(char key, int id) {
       // Multi key validation
-      // Control + ?      
+      // Control + ?
       if (Keyboard.isKeyDown(Keyboard.KEY_LCONTROL) || Keyboard.isKeyDown(Keyboard.KEY_RCONTROL)) {
          if (Keyboard.isKeyDown(Keyboard.KEY_C)) {
             if (initialHighlighting[0] != -1 && lastHighlighting[0] != -1) {
@@ -613,124 +616,122 @@ public class GuiConsole extends GuiScreen implements Runnable {
       }
       else
       {
-    	  clearHighlighting();
-          if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
-             String[] str = message.split(" ");
+         clearHighlighting();
+         if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
+            String[] str = message.split(" ");
 
-             String match = "";
+            String match = "";
 
-             if (str.length > 1) {
-                if (tabPosition == 0) {
-                   match = str[1];
-                } else {
-                   match = tabWord;
-                }
-             }
-             if (tabPosition < 0) {
-                tabPosition = 0;
-             }
+            if (str.length > 1) {
+               if (tabPosition == 0) {
+                  match = str[1];
+               } else {
+                  match = tabWord;
+               }
+            }
+            if (tabPosition < 0) {
+               tabPosition = 0;
+            }
 
-             if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + match.length() || tabPosition > 0) {
-                ArrayList<String> tempList = new ArrayList<String>(Arrays.asList(ConsoleSettingCommands.list("").split("\n")));
-                ArrayList<String> list = new ArrayList<String>();
-                for (int i = 0; i < tempList.size(); i++) {
-                   if (tempList.get(i).startsWith(match.toUpperCase())) {
-                      list.add(tempList.get(i)); //Can't delete from a list in a loop; workaround
-                   }
-                }
+            if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + match.length() || tabPosition > 0) {
+               ArrayList<String> tempList = new ArrayList<String>(Arrays.asList(ConsoleSettingCommands.list("").split("\n")));
+               ArrayList<String> list = new ArrayList<String>();
+               for (int i = 0; i < tempList.size(); i++) {
+                  if (tempList.get(i).startsWith(match.toUpperCase())) {
+                     list.add(tempList.get(i)); //Can't delete from a list in a loop; workaround
+                  }
+               }
 
-                if (list.size() > 0) {
+               if (list.size() > 0) {
+                  tabWord = match;
 
-                   tabWord = match;
+                  if (tabPosition == 0) {
+                     message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + match.length(), message.length());
+                  } else if (tabPosition > 0) {
+                     message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + list.get(tabPosition - 1).length(), message.length());
+                  }
+                  cursor = str[0].length() + 1 + list.get(tabPosition).length();
 
-                   if (tabPosition == 0) {
-                      message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + match.length(), message.length());
-                   } else if (tabPosition > 0) {
-                      message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + list.get(tabPosition - 1).length(), message.length());
-                   }
-                   cursor = str[0].length() + 1 + list.get(tabPosition).length();
+                  tabPosition++;
+                  if (tabPosition >= list.size()) {
+                     tabPosition = -1;
+                  }
+               }
+            }
+         } else {
+            List<String> autoWords = getAutoPossibility();
+            int word = 0;
+            int pos = 0;
+            String str = "";
+            if (autoWords != null) {
+               str = message;
+               if (tabPosition != 0) {
+                  str = tabWord;
+                  if (tabPosition < 0) {
+                     tabPosition = 0;
+                  }
+               }
 
-                   tabPosition++;
-                   if (tabPosition >= list.size()) {
-                      tabPosition = -1;
-                   }
-                }
-             }
-          } else {
-             List<String> users = getPlayerNames();
-             int word = 0;
-             int pos = 0;
-             String str = "";
-             if (users != null) {
-                str = message;
-                if (tabPosition != 0) {
-                   str = tabWord;
-                   if (tabPosition < 0) {
-                      tabPosition = 0;
-                   }
+               if (message.contains(" ")) {
+                  // Gets the word to tab-complete
+                  String[] words = message.split(" ");
+                  if (words.length > 0) {
+                     for (int i = 0; i < words.length; i++) {
+                        int spacesBefore = 0; //I had to do this instead of indexOf so we can still tab complete if it isn't the first instance of the word in the string
+                        if (pos != 0) {
+                           String temp = ("." + message.substring(pos)).trim(); //Added dot to keep beginning spaces
+                           temp = temp.substring(1); //get rid of dot
+                           spacesBefore = temp.length() - temp.trim().length(); //length with spaces - length without spaces.
+                        }
+                        pos += words[i].length() + spacesBefore;
+                        if (cursor <= pos) {
+                           word = i;
+                           pos -= words[i].length(); //Pos now represents the beginning of the word to replace
+                           break;
+                        }
+                     }
 
-                }
+                     str = words[word];
+                  } else {
+                     str = "";
+                  }
+               }
 
-                if (message.contains(" ")) {
-                   // Gets the word to tab-complete
-                   String[] words = message.split(" ");
-                   if (words.length > 0) {
-                      for (int i = 0; i < words.length; i++) {
-                         int spacesBefore = 0; //I had to do this instead of indexOf so we can still tab complete if it isn't the first instance of the word in the string 
-                         if (pos != 0) {
-                            String temp = ("." + message.substring(pos)).trim(); //Added dot to keep beginning spaces
-                            temp = temp.substring(1); //get rid of dot
-                            spacesBefore = temp.length() - temp.trim().length(); //length with spaces - length without spaces.
-                         }
-                         pos += words[i].length() + spacesBefore;
-                         if (cursor <= pos) {
-                            word = i;
-                            pos -= words[i].length(); //Pos now represents the beginning of the word to replace
-                            break;
-                         }
-                      }
+               boolean matched = false;
+               ArrayList<String> matches = new ArrayList<String>();
+               int numMatches = 0;
+               for (int i = 0; i < autoWords.size(); i++) {
+                  String currentWord = autoWords.get(i);
+                  // Tests if a autoword starts with the last input word (str)
+                  if (currentWord.toLowerCase().startsWith(str.toLowerCase())) {
+                     matched = true;
+                     matches.add(currentWord);
+                     tabWord = str;
+                     numMatches++;
+                  }
+               }
 
-                      str = words[word];
-                   } else {
-                      str = "";
-                   }
-                }
+               if (matched) {
+                  if (tabPosition >= numMatches) { //If a player leaves in-between tabs tabPosition might be out of bounds
+                     tabPosition = 0;
+                  }
 
-                boolean matched = false;
-                ArrayList<String> matches = new ArrayList<String>();
-                int numMatches = 0;
-                for (int i = 0; i < users.size(); i++) {
-                   String user = users.get(i);
-                   // Tests if a username starts with the last input word (str)
-                   if (user.toLowerCase().startsWith(str.toLowerCase())) {
-                      matched = true;
-                      matches.add(user);
-                      tabWord = str;
-                      numMatches++;
-                   }
-                }
+                  if (message.contains(" ")) {
+                     String replace = str;
+                     message = message.substring(0, pos) + matches.get(tabPosition) + message.substring(pos + replace.length(), message.length());
+                     cursor = pos + matches.get(tabPosition).length();
+                  } else {
+                     message = matches.get(tabPosition);
+                     cursor = message.length();
+                  }
 
-                if (matched) {
-                   if (tabPosition >= numMatches) { //If a player leaves in-between tabs tabPosition might be out of bounds
-                      tabPosition = 0;
-                   }
-
-                   if (message.contains(" ")) {
-                      String replace = str;
-                      message = message.substring(0, pos) + matches.get(tabPosition) + message.substring(pos + replace.length(), message.length());
-                      cursor = pos + matches.get(tabPosition).length();
-                   } else {
-                      message = matches.get(tabPosition);
-                      cursor = message.length();
-                   }
-
-                   tabPosition++;
-                   if (tabPosition >= numMatches) {
-                      tabPosition = -1;
-                   }
-                }
-             }
-          }
+                  tabPosition++;
+                  if (tabPosition >= numMatches) {
+                     tabPosition = -1;
+                  }
+               }
+            }
+         }
       }
 
       // Single key validation
@@ -879,7 +880,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             clearHighlighting();
             break;
          default:
-            // Verifies that the character is in the character set before adding 
+            // Verifies that the character is in the character set before adding
             if (updateCounter != 0) {
                if (CLOSE_WITH_OPEN_KEY && id == mod_Console.openKey.keyCode) {
                   mc.displayGuiScreen(null);
@@ -914,7 +915,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Returns true if the current game is being player on a server
-    * 
+    *
     * @return True is returned when the current game is being played on a
     *         Minecraft server
     */
@@ -924,7 +925,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Gets all the usernames on the current server you're on
-    * 
+    *
     * @return A list in alphabetical order of players logged onto the server
     */
    public List<String> getPlayerNames() {
@@ -935,7 +936,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          List tempList = netclienthandler.playerNames;
          for (GuiPlayerInfo info : (List<GuiPlayerInfo>) tempList) {
             String name = info.name; //There were some problems with bukkit plugins adding prefixes or suffixes to the names list. This cleans the strings.
-            Pattern pattern = Pattern.compile("[\\[[\\{[\\(]]]+?.*?[\\][\\}[\\)]]]"); //Get rid of everything between the brackets (), [], or {} 
+            Pattern pattern = Pattern.compile("[\\[[\\{[\\(]]]+?.*?[\\][\\}[\\)]]]"); //Get rid of everything between the brackets (), [], or {}
             Matcher matcher = pattern.matcher(name);
             name = matcher.replaceAll("");
             String cleanName = "";
@@ -960,6 +961,26 @@ public class GuiConsole extends GuiScreen implements Runnable {
    }
 
    /**
+    * Gets all possible autocomplete words, including playernames
+    *
+    * @return A list of all possible word completions for autoword
+    */
+
+   public List<String> getAutoPossibility()
+   {
+      List<String> autowords = new ArrayList<String>();
+      List<String> players = getPlayerNames();
+      if(players != null && players.size() > 0)
+      {
+         autowords.addAll(players);
+      }
+
+      autowords.addAll(ConsoleChatCommands.getChatCommands());
+
+      return autowords;
+   }
+
+   /**
     * Changes the highlighting bounds so nothing is highlighted
     */
 
@@ -974,7 +995,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * Cleans a dirty string of any invalid characters then returns the clean
     * string to the user. Verifies that the string doesn't go beyond the maximum
     * length as well
-    * 
+    *
     * @param dirty - The string to clean
     * @return A nice clean string
     */
@@ -998,7 +1019,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    /**
     * Gets the String on the system clip board, if it exists. Otherwise null is
     * returned
-    * 
+    *
     * @return Returns the String on the clip board
     */
    public static String getClipboardString() {
@@ -1014,7 +1035,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Sets a String onto the system clip board.
-    * 
+    *
     * @param str - The string to copy onto the clip board
     */
    public static void setClipboardString(String str) {
@@ -1028,7 +1049,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * Command history implementation, sets the historyPosition pointer to
     * position based on its validity. The validity is verified by the method
     * and the pointer is kept between the bounds of the history
-    * 
+    *
     * @param position - The position to set the pointer to
     * @return The input at this position in history
     */
@@ -1142,7 +1163,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
             initialHighlighting[1] = LINES.get(initialHighlighting[0]).length();
          }
       }
-
    }
 
    /**
@@ -1218,7 +1238,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Called per frame to draw the new frame
-    * 
+    *
     * @see net.minecraft.src.GuiScreen#drawScreen(int, int, float)
     */
    @Override
@@ -1409,7 +1429,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       BOTTOM = new int[] { scroll_minx + 1, scroll_maxy - 9, scroll_maxx - 1, scroll_maxy - 1 };
       drawStringFlipped(this.mc.fontRenderer, "^", BOTTOM[0] + 1, BOTTOM[1] - 3, COLOR_SCROLL_ARROW, true);
 
-      // Scroll - bar           
+      // Scroll - bar
       int scrollable_minx = scroll_minx + 1;
       int scrollable_maxx = scroll_maxx - 1;
       int scrollable_miny = scroll_miny + 11;
@@ -1450,7 +1470,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Draws the specified String flipped upside down
-    * 
+    *
     * @param fontrenderer
     * @param s string to draw
     * @param i position of the x coordinate
@@ -1463,7 +1483,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       GL11.glScalef(-1F, -1F, 1F);
       GL11.glTranslatef((-i * 2) - fontrenderer.getStringWidth(s), (-j * 2) - fontrenderer.FONT_HEIGHT, 0.0F);
       if (flag) {
-         fontrenderer.drawString(s, i - 1, j - 1, (k & 0xfcfcfc) >> 2 | k & 0xff000000); //Took the last argument from FrontRenderer.renderString() because it's private and I want the shadow on the correct side when flipped 
+         fontrenderer.drawString(s, i - 1, j - 1, (k & 0xfcfcfc) >> 2 | k & 0xff000000); //Took the last argument from FrontRenderer.renderString() because it's private and I want the shadow on the correct side when flipped
       }
       fontrenderer.drawString(s, i, j, k);
       GL11.glPopMatrix();
@@ -1471,7 +1491,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Tests whether the (x, y) coordinate is within the rectangle or not
-    * 
+    *
     * @param x x coordinate
     * @param y y coordinate
     * @param rect integer array in the form of {mix x, min y, max x, max y}
@@ -1487,7 +1507,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Returns the mouse position as an index within the string line
-    * 
+    *
     * @param x The mouse's x position relative to the start of the string line
     * @param line The string to find the index in
     * @return the character index the mouse clicked at.
@@ -1531,7 +1551,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Called on mouse clicked and processes the button clicks and actions
-    * 
+    *
     * @see net.minecraft.src.GuiScreen#mouseClicked(int, int, int)
     */
    @Override
@@ -1582,14 +1602,14 @@ public class GuiConsole extends GuiScreen implements Runnable {
             int charAt = mouseAt(mousexCorrected, LINES.get(lineAt));
             initialHighlighting[1] = charAt;
          }
-         
+
          super.mouseClicked(mousex, mousey, button);
       }
    }
 
    /**
     * Method is called on mouse movement and used to determine slider movement
-    * 
+    *
     * @see net.minecraft.src.GuiScreen#mouseMovedOrUp(int, int, int)
     */
    @Override
@@ -1654,27 +1674,27 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
       }
    }
-   
+
    private int correctYlineAt(int mousey)
    {
-	   int maxDisplayedLines = (HISTORY[3] - HISTORY[1]) / (CHARHEIGHT - 1);
-	   int linesDisplayed = LINES.size() >= maxDisplayedLines ? maxDisplayedLines : LINES.size();
-	   int mouseyCorrected = mousey - HISTORY[1] - BORDERSIZE;
-	   int lineAt = mouseyCorrected / (CHARHEIGHT - 1) + LINES.size() - linesDisplayed - slider;
-       
-       if (lineAt >= LINES.size()) {
-          lineAt = LINES.size() - maxDisplayedLines + lineAt;
-          if (lineAt < 0) {
-             lineAt = 0;
-          }
-       }
-       
-       return lineAt;
+      int maxDisplayedLines = (HISTORY[3] - HISTORY[1]) / (CHARHEIGHT - 1);
+      int linesDisplayed = LINES.size() >= maxDisplayedLines ? maxDisplayedLines : LINES.size();
+      int mouseyCorrected = mousey - HISTORY[1] - BORDERSIZE;
+      int lineAt = mouseyCorrected / (CHARHEIGHT - 1) + LINES.size() - linesDisplayed - slider;
+
+      if (lineAt >= LINES.size()) {
+         lineAt = LINES.size() - maxDisplayedLines + lineAt;
+         if (lineAt < 0) {
+            lineAt = 0;
+         }
+      }
+
+      return lineAt;
    }
-   
+
    /**
     * Returns true if the GUI is open
-    * 
+    *
     * @return Returns whether the GUI is open or not
     */
    public boolean isGuiOpen() {
@@ -1685,7 +1705,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * Adds a console listener to the console. When events are triggered they
     * are then sent to all the listeners in the order which they are registered
     * in
-    * 
+    *
     * @param cl - The listener to add
     */
    public void addConsoleListener(ConsoleListener cl) {
@@ -1696,7 +1716,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Adds an input message to the console
-    * 
+    *
     * @param message - The input message
     */
    public void addInputMessage(String message) {
@@ -1745,7 +1765,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    /**
     * Adds an output message to the console
-    * 
+    *
     * @param message - The output message
     */
    public void addOutputMessage(String message) {
@@ -1792,12 +1812,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * on a configurable interval, by default 20ms. It uses Object.equals
     * against the ChatLine object to determine the previous message which was
     * copied across.
-    * 
+    *
     * This method also clears the history and output lists once they reach
     * capacity
-    * 
+    *
     * This method also handles key bindings
-    * 
+    *
     * @see java.lang.Runnable#run()
     */
    @Override
@@ -1883,7 +1903,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    /**
     * Reads the settings from the specified file and sets them to their
     * applicable variables
-    * 
+    *
     * @param base - The class to set the settings in
     * @param settings - The settings file to load the values from
     */
@@ -1957,7 +1977,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    /**
     * Writes the variables from the specified class into the specified file
     * in a .properties format
-    * 
+    *
     * @param base - The class to get the settings from
     * @param settings - The settings file to save the values to
     */
