@@ -36,8 +36,9 @@ public class ConsoleDefaultCommands {
       List<String> commands = new ArrayList();
 
       try {
-         Class helper = Class.forName ("net.minecraft.src.PlayerHelper");
+         Class helper = Class.forName ("PlayerHelper");
          Set SPC_cmd = PlayerHelper.CMDS.keySet();
+         
          for (Object entry : SPC_cmd) {
             if(entry instanceof String)
             {
