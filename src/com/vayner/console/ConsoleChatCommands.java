@@ -38,8 +38,11 @@ import net.minecraft.src.ModLoader;
  */
 
 public class ConsoleChatCommands implements ConsoleListener{
-   private static final File COMMANDFILE_SINGLEPLAYER = new File(GuiConsole.MOD_DIR,"singleplayer.txt");
-   private static final File COMMANDFILE_MULTIPLAYER = new File(GuiConsole.MOD_DIR,"multiplayer.txt");
+   private static final String singleplayerFileName = "singleplayer.txt";
+   private static final String multiplayerFileName = "multiplayer.txt";
+   
+   private static final File COMMANDFILE_SINGLEPLAYER = new File(GuiConsole.MOD_DIR,singleplayerFileName);
+   private static final File COMMANDFILE_MULTIPLAYER = new File(GuiConsole.MOD_DIR,multiplayerFileName);
 
    private static List commands_Singleplayer;
    private static List commands_Multiplayer;
@@ -49,7 +52,7 @@ public class ConsoleChatCommands implements ConsoleListener{
       ConsoleDefaultCommands.init();
       loadAllCommands();
    }
-
+   
    public static List<String> getChatCommands()
    {
       if(GuiConsole.getInstance().isMultiplayerMode())
@@ -112,7 +115,7 @@ public class ConsoleChatCommands implements ConsoleListener{
    {
       if(!COMMANDFILE_SINGLEPLAYER.exists())
       {
-         System.out.println("Generating singleplayer.txt");
+         System.out.println("Generating " + singleplayerFileName);
          saveChatCommands(ConsoleDefaultCommands.getDefaultSingleplayerCommands(),COMMANDFILE_SINGLEPLAYER);
       }
 
@@ -120,13 +123,14 @@ public class ConsoleChatCommands implements ConsoleListener{
 
       if(!COMMANDFILE_MULTIPLAYER.exists())
       {
-         System.out.println("Generating multiplayer.txt");
+         System.out.println("Generating " + multiplayerFileName);
          saveChatCommands(ConsoleDefaultCommands.getDefaultMultiplayerCommands(),COMMANDFILE_MULTIPLAYER);
       }
 
       commands_Multiplayer = loadChatCommands(COMMANDFILE_MULTIPLAYER);
 
-      System.out.println("commands_Singleplayer contains:" + commands_Singleplayer.size() + " entries");
+      System.out.println(singleplayerFileName + " contains:" + commands_Singleplayer.size() + " entries");
+      System.out.println(multiplayerFileName + " contains:" + commands_Multiplayer.size() + " entries");
    }
 
    @Override

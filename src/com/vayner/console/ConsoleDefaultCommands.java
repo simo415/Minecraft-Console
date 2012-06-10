@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
+import net.minecraft.src.ModLoader;
 import net.minecraft.src.PlayerHelper;
 
 /**
@@ -30,39 +31,56 @@ import net.minecraft.src.PlayerHelper;
 public class ConsoleDefaultCommands {
    private static ArrayList<String> vanillaServerCommands;
    private static ArrayList<String> worldEditCommands;
-
+   private static ArrayList<String> commandBookCommands;
+   
    public static List<String> getDefaultSingleplayerCommands()
    {
       List<String> commands = new ArrayList();
-
+      
+      if(ModLoader.getMinecraftInstance().session.username.equals("MCPTEST"))
+      {
+         commands.addAll(getSPCcommands());
+         Collections.sort(commands);
+         return commands;
+      }
+      
       try {
-         Class helper = Class.forName ("PlayerHelper");
-         Set SPC_cmd = PlayerHelper.CMDS.keySet();
+         Class helper = Class.forName("PlayerHelper",false,null);
          
-         for (Object entry : SPC_cmd) {
-            if(entry instanceof String)
-            {
-               commands.add((String)entry);
-            }
-         }
-
-         commands.addAll(worldEditCommands);
+         commands.addAll(getSPCcommands());
+         Collections.sort(commands);
       } catch (ClassNotFoundException e) {
          System.out.println("Single Player Commands 'PlayerHelper.class' not found, unable to retrive commands for SPC");
       }
-      
-      Collections.sort(commands);
 
       return commands;
    }
-
+   
+   private static ArrayList<String> getSPCcommands()
+   {
+      Set SPC_cmd = PlayerHelper.CMDS.keySet();
+      ArrayList<String> commands = new ArrayList<String>();
+      
+      for (Object entry : SPC_cmd) {
+         if(entry instanceof String)
+         {
+            commands.add((String)entry);
+         }
+      }
+      
+      commands.addAll(worldEditCommands);
+      
+      return commands;
+   }
+   
    public static List<String> getDefaultMultiplayerCommands()
    {
       List<String> commands = new ArrayList();
 
       commands.addAll(vanillaServerCommands);
       commands.addAll(worldEditCommands);
-
+      commands.addAll(commandBookCommands);
+      
       Collections.sort(commands);
 
       return commands;
@@ -81,7 +99,7 @@ public class ConsoleDefaultCommands {
       vanillaServerCommands.add("/ban");
       vanillaServerCommands.add("/ban-ip");
       vanillaServerCommands.add("/banlist");
-      //vanillaServerCommands.add("/banlist ips");
+      vanillaServerCommands.add("/banlist ips");
       vanillaServerCommands.add("/gamemode");
       vanillaServerCommands.add("/give");
       vanillaServerCommands.add("/help");
@@ -95,29 +113,14 @@ public class ConsoleDefaultCommands {
       vanillaServerCommands.add("/save-on");
       vanillaServerCommands.add("/say");
       vanillaServerCommands.add("/stop");
-      
-      
-      vanillaServerCommands.add("/time");
-      vanillaServerCommands.add("set");
-      
-      //vanillaServerCommands.add("/time set");
-      //vanillaServerCommands.add("/time add");
-      
+      vanillaServerCommands.add("/time set");
+      vanillaServerCommands.add("/time add");
       vanillaServerCommands.add("/toggledownfall");
       vanillaServerCommands.add("/tp");
-
-
-      vanillaServerCommands.add("/whitelist");
-      vanillaServerCommands.add("add");
-      vanillaServerCommands.add("remove");
-      vanillaServerCommands.add("list");
-      vanillaServerCommands.add("reload");
-
-      //vanillaServerCommands.add("/whitelist add");
-      //vanillaServerCommands.add("/whitelist remove");
-      //vanillaServerCommands.add("/whitelist list");
-      //vanillaServerCommands.add("/whitelist reload");
-
+      vanillaServerCommands.add("/whitelist add");
+      vanillaServerCommands.add("/whitelist remove");
+      vanillaServerCommands.add("/whitelist list");
+      vanillaServerCommands.add("/whitelist reload");
       vanillaServerCommands.add("/xp");
 
 
@@ -130,34 +133,19 @@ public class ConsoleDefaultCommands {
       worldEditCommands.add("/clearhistory");
       worldEditCommands.add("//wand");
       worldEditCommands.add("/toggleeditwand");
-
-
       worldEditCommands.add("//sel");
-      worldEditCommands.add("cuboid");
-      worldEditCommands.add("extend");
-      worldEditCommands.add("poly");
-      worldEditCommands.add("ellipsoid");
-      worldEditCommands.add("sphere");
-      worldEditCommands.add("cyl");
-
-      //worldEditCommands.add("//sel cuboid");
-      //worldEditCommands.add("//sel extend");
-      //worldEditCommands.add("//sel poly");
-      //worldEditCommands.add("//sel ellipsoid");
-      //worldEditCommands.add("//sel sphere");
-      //worldEditCommands.add("//sel cyl");
-
+      worldEditCommands.add("//sel cuboid");
+      worldEditCommands.add("//sel extend");
+      worldEditCommands.add("//sel poly");
+      worldEditCommands.add("//sel ellipsoid");
+      worldEditCommands.add("//sel sphere");
+      worldEditCommands.add("//sel cyl");
       worldEditCommands.add("//pos1");
       worldEditCommands.add("//pos2");
       worldEditCommands.add("//hpos1");
       worldEditCommands.add("//hpos2");
       worldEditCommands.add("//chunk");
       worldEditCommands.add("//expand");
-      worldEditCommands.add("//expand");
-      worldEditCommands.add("//expand");
-      worldEditCommands.add("//expand");
-      worldEditCommands.add("//contract");
-      worldEditCommands.add("//contract");
       worldEditCommands.add("//contract");
       worldEditCommands.add("//outset");
       worldEditCommands.add("//inset");
@@ -166,7 +154,6 @@ public class ConsoleDefaultCommands {
       worldEditCommands.add("//count");
       worldEditCommands.add("//distr");
       worldEditCommands.add("//set");
-      worldEditCommands.add("//replace");
       worldEditCommands.add("//replace");
       worldEditCommands.add("//overlay");
       worldEditCommands.add("//walls");
@@ -180,23 +167,14 @@ public class ConsoleDefaultCommands {
       worldEditCommands.add("//paste");
       worldEditCommands.add("//rotate");
       worldEditCommands.add("//flip");
-
-
-      worldEditCommands.add("//schem");
-      worldEditCommands.add("//schematic");
-      worldEditCommands.add("save");
-      worldEditCommands.add("load");
-      worldEditCommands.add("formats");
-
-      //worldEditCommands.add("//schem save");
-      //worldEditCommands.add("//schem load");
-      //worldEditCommands.add("//schem list");
-      //worldEditCommands.add("//schem formats");
-      //worldEditCommands.add("//schematic save");
-      //worldEditCommands.add("//schematic load");
-      //worldEditCommands.add("//schematic list");
-      //worldEditCommands.add("//schematic formats");
-
+      worldEditCommands.add("//schem save");
+      worldEditCommands.add("//schem load");
+      worldEditCommands.add("//schem list");
+      worldEditCommands.add("//schem formats");
+      worldEditCommands.add("//schematic save");
+      worldEditCommands.add("//schematic load");
+      worldEditCommands.add("//schematic list");
+      worldEditCommands.add("//schematic formats");
       worldEditCommands.add("/clearclipboard");
       worldEditCommands.add("//hcyl");
       worldEditCommands.add("//cyl");
@@ -225,34 +203,18 @@ public class ConsoleDefaultCommands {
       worldEditCommands.add("/listchunks");
       worldEditCommands.add("/delchunks");
       worldEditCommands.add("//");
-
-
-      worldEditCommands.add("/sp");
-      worldEditCommands.add("single");
-      worldEditCommands.add("area");
-      worldEditCommands.add("recur");
-
-      //worldEditCommands.add("/sp single");
-      //worldEditCommands.add("/sp area");
-      //worldEditCommands.add("/sp recur");
-
+      worldEditCommands.add("/sp single");
+      worldEditCommands.add("/sp area");
+      worldEditCommands.add("/sp recur");
       worldEditCommands.add("/none");
       worldEditCommands.add("/info");
       worldEditCommands.add("/tree");
       worldEditCommands.add("//repl");
       worldEditCommands.add("//cycler");
-
-
-      worldEditCommands.add("/brush");
-      worldEditCommands.add("cylinder");
-      worldEditCommands.add("clipboard");
-      worldEditCommands.add("smooth");
-
-      //worldEditCommands.add("/brush sphere");
-      //worldEditCommands.add("/brush cylinder");
-      //worldEditCommands.add("/brush clipboard");
-      //worldEditCommands.add("/brush smooth");
-
+      worldEditCommands.add("/brush sphere");
+      worldEditCommands.add("/brush cylinder");
+      worldEditCommands.add("/brush clipboard");
+      worldEditCommands.add("/brush smooth");
       worldEditCommands.add("/size");
       worldEditCommands.add("//mat");
       worldEditCommands.add("//mask");
@@ -264,33 +226,116 @@ public class ConsoleDefaultCommands {
       worldEditCommands.add("/jumpto");
       worldEditCommands.add("/up");
       worldEditCommands.add("//restore");
-
-
-      worldEditCommands.add("//snap");
-      worldEditCommands.add("use");
-      worldEditCommands.add("before");
-      worldEditCommands.add("after");
-
-      //worldEditCommands.add("//snap use");
-      //worldEditCommands.add("//snap list");
-      //worldEditCommands.add("//snap before");
-      //worldEditCommands.add("//snap after");
-
+      worldEditCommands.add("//snap use");
+      worldEditCommands.add("//snap list");
+      worldEditCommands.add("//snap before");
+      worldEditCommands.add("//snap after");
       worldEditCommands.add("/cs");
       worldEditCommands.add("/.s");
       worldEditCommands.add("/search");
-
-
-      worldEditCommands.add("//worldedit");
-      worldEditCommands.add("version");
-      worldEditCommands.add("tz");
-
-      //worldEditCommands.add("//worldedit reload");
-      //worldEditCommands.add("//worldedit version");
-      //worldEditCommands.add("//worldedit tz");
-
+      worldEditCommands.add("//worldedit reload");
+      worldEditCommands.add("//worldedit version");
+      worldEditCommands.add("//worldedit tz");
       worldEditCommands.add("/biome");
       worldEditCommands.add("/biomelist");
       worldEditCommands.add("//setbiome");
+      
+      
+      commandBookCommands = new ArrayList<String>();
+      
+      commandBookCommands.add("/item");
+      commandBookCommands.add("/i");
+      //commandBookCommands.add("/give");
+      commandBookCommands.add("/more");
+      commandBookCommands.add("/who");
+      //commandBookCommands.add("/list");
+      commandBookCommands.add("/playerlist");
+      commandBookCommands.add("/online");
+      commandBookCommands.add("/players");
+      commandBookCommands.add("/motd");
+      commandBookCommands.add("/intro");
+      commandBookCommands.add("/midi");
+      commandBookCommands.add("/rules");
+      commandBookCommands.add("/kit");
+      commandBookCommands.add("/kit");
+      commandBookCommands.add("/setspawn");
+      //commandBookCommands.add("/time");
+      commandBookCommands.add("/time now");
+      commandBookCommands.add("/time -l now");
+      commandBookCommands.add("/time");
+      commandBookCommands.add("/playertime");
+      commandBookCommands.add("/spawnmob");
+      commandBookCommands.add("/weather stormy");
+      commandBookCommands.add("/weather sunny");
+      commandBookCommands.add("/thunder on");
+      commandBookCommands.add("/thunder off");
+      //commandBookCommands.add("/biome");
+      commandBookCommands.add("/spawn");
+      commandBookCommands.add("/teleport");
+      commandBookCommands.add("/tp");
+      commandBookCommands.add("/bring");
+      commandBookCommands.add("/tphere");
+      commandBookCommands.add("/summon");
+      commandBookCommands.add("/s");
+      commandBookCommands.add("/place");
+      commandBookCommands.add("/put");
+      commandBookCommands.add("/return");
+      commandBookCommands.add("/ret");
+      commandBookCommands.add("/call");
+      commandBookCommands.add("/home");
+      commandBookCommands.add("/sethome");
+      commandBookCommands.add("/warp");
+      commandBookCommands.add("/setwarp");
+      commandBookCommands.add("/warps del");
+      commandBookCommands.add("/warps delete");
+      commandBookCommands.add("/warps remove");
+      commandBookCommands.add("/warps rem");
+      commandBookCommands.add("/warps list");
+      commandBookCommands.add("/warps show");
+      commandBookCommands.add("/broadcast");
+      //commandBookCommands.add("/say");
+      //commandBookCommands.add("/me");
+      commandBookCommands.add("/msg");
+      commandBookCommands.add("/message");
+      commandBookCommands.add("/whisper");
+      commandBookCommands.add("/pm");
+      //commandBookCommands.add("/tell");
+      commandBookCommands.add("/reply");
+      commandBookCommands.add("/r");
+      commandBookCommands.add("/mute");
+      commandBookCommands.add("/unmute");
+      commandBookCommands.add("/afk");
+      commandBookCommands.add("/whereami");
+      commandBookCommands.add("/getpos");
+      commandBookCommands.add("/pos");
+      commandBookCommands.add("/where");
+      commandBookCommands.add("/compass");
+      commandBookCommands.add("/clear");
+      commandBookCommands.add("/slap");
+      commandBookCommands.add("/rocket");
+      commandBookCommands.add("/barrage");
+      commandBookCommands.add("/firebarrage");
+      commandBookCommands.add("/shock");
+      commandBookCommands.add("/thor");
+      commandBookCommands.add("/freeze");
+      commandBookCommands.add("/unthor");
+      //commandBookCommands.add("/gamemode");
+      commandBookCommands.add("/heal");
+      commandBookCommands.add("/ping");
+      commandBookCommands.add("/whois");
+      commandBookCommands.add("/debug info");
+      commandBookCommands.add("/debug clock");
+      commandBookCommands.add("/cmdbook version");
+      commandBookCommands.add("/cmdbook reload");
+      //commandBookCommands.add("/kick");
+      //commandBookCommands.add("/ban");
+      commandBookCommands.add("/unban");
+      commandBookCommands.add("/isbanned");
+      commandBookCommands.add("/baninfo");
+      commandBookCommands.add("/bans load");
+      commandBookCommands.add("/bans save");
+      commandBookCommands.add("/god");
+      commandBookCommands.add("/ungod");
+      
    }
 }

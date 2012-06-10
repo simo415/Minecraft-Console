@@ -92,10 +92,13 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private volatile Vector<String> log;                              // The log messages
    private SimpleDateFormat sdf;                                     // The date format for logs
 
-   private int tabPosition;                                          // Where you have tabbed to through user list
-   private int tabWordPos;                                           //start place of tabbed word
-   private String tabWord;                                           // The current tabbed word
-   private String tabMessage;                                        // The current tabbed message
+   private int tabListPos;                                           // Where you have tabbed to through word list
+   private int tabMaxPos;                                            // Max size of the list
+   private boolean tabbing = false;                                  // Is tabbing
+   
+   private int tabWordPos;                                           // start place of tabWord
+   private String tabMatchingWord;                                   // The current word checking to
+   private String tabMatchedWord;                                    // The current word matched to
 
    private volatile HashMap<String,String> keyBindings;              // All the current key bindings
    private volatile List<Integer> keyDown;                           // List of all the keys currently held down
@@ -181,7 +184,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int COLOR_OUTPUT_BACKGROUND = 0xBB999999;          // Colour of the output background
    private static int COLOR_INPUT_BACKGROUND = 0xBB999999;           // Colour of the input background
 
-   public static final String VERSION = "1.2.1b";                    // Version of the mod
+   public static final String VERSION = "1.2.2 beta";                    // Version of the mod
    private static String TITLE = "Console";                          // Title of the console
 
    private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
@@ -194,6 +197,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    private static boolean EMACS_KEYS = false;                        // Use emacs keybindings
    private static int AUTOCOMPLETE_KEY = Keyboard.KEY_TAB;           // Autocomlete keybinding
+   private static int AUTOPREV_KEY = Keyboard.KEY_LEFT;
+   private static int AUTONEXT_KEY = Keyboard.KEY_RIGHT;
 
    /* @formatter:on */
 
@@ -609,12 +614,25 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
          return;
       }
-
-      if (id != AUTOCOMPLETE_KEY) {
-         tabPosition = 0;
-         tabWord = "";
+      
+      if(tabbing)
+      {
+         if(id == AUTONEXT_KEY)
+         {
+            updateTabPos(1);
+            return;
+         }
+         else if(id == AUTOPREV_KEY)
+         {
+            updateTabPos(-1);
+            return;
+         }
       }
-      else
+      
+      if (id != AUTOCOMPLETE_KEY && id != AUTOPREV_KEY && id != AUTONEXT_KEY) {
+         resetTabbing();
+      }
+      else if(id == AUTOCOMPLETE_KEY)
       {
          clearHighlighting();
          if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
@@ -623,17 +641,17 @@ public class GuiConsole extends GuiScreen implements Runnable {
             String match = "";
 
             if (str.length > 1) {
-               if (tabPosition == 0) {
+               if (tabListPos == 0) {
                   match = str[1];
                } else {
-                  match = tabWord;
+                  match = tabMatchingWord;
                }
             }
-            if (tabPosition < 0) {
-               tabPosition = 0;
+            if (tabListPos < 0) {
+               tabListPos = 0;
             }
 
-            if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + match.length() || tabPosition > 0) {
+            if (cursor >= str[0].length() + 1 && cursor <= str[0].length() + 1 + match.length() || tabListPos > 0) {
                ArrayList<String> tempList = new ArrayList<String>(Arrays.asList(ConsoleSettingCommands.list("").split("\n")));
                ArrayList<String> list = new ArrayList<String>();
                for (int i = 0; i < tempList.size(); i++) {
@@ -643,95 +661,25 @@ public class GuiConsole extends GuiScreen implements Runnable {
                }
 
                if (list.size() > 0) {
-                  tabWord = match;
+                  tabMatchingWord = match;
 
-                  if (tabPosition == 0) {
-                     message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + match.length(), message.length());
-                  } else if (tabPosition > 0) {
-                     message = message.substring(0, str[0].length() + 1) + list.get(tabPosition) + message.substring(str[0].length() + 1 + list.get(tabPosition - 1).length(), message.length());
+                  if (tabListPos == 0) {
+                     message = message.substring(0, str[0].length() + 1) + list.get(tabListPos) + message.substring(str[0].length() + 1 + match.length(), message.length());
+                  } else if (tabListPos > 0) {
+                     message = message.substring(0, str[0].length() + 1) + list.get(tabListPos) + message.substring(str[0].length() + 1 + list.get(tabListPos - 1).length(), message.length());
                   }
-                  cursor = str[0].length() + 1 + list.get(tabPosition).length();
+                  cursor = str[0].length() + 1 + list.get(tabListPos).length();
 
-                  tabPosition++;
-                  if (tabPosition >= list.size()) {
-                     tabPosition = -1;
+                  tabListPos++;
+                  if (tabListPos >= list.size()) {
+                     tabListPos = -1;
                   }
                }
             }
          } else {
-            List<String> autoWords = getAutoPossibility();
-            int word = 0;
-            int pos = 0;
-            String str = "";
-            if (autoWords != null) {
-               str = message;
-               if (tabPosition != 0) {
-                  str = tabWord;
-                  if (tabPosition < 0) {
-                     tabPosition = 0;
-                  }
-               }
-
-               if (message.contains(" ")) {
-                  // Gets the word to tab-complete
-                  String[] words = message.split(" ");
-                  if (words.length > 0) {
-                     for (int i = 0; i < words.length; i++) {
-                        int spacesBefore = 0; //I had to do this instead of indexOf so we can still tab complete if it isn't the first instance of the word in the string
-                        if (pos != 0) {
-                           String temp = ("." + message.substring(pos)).trim(); //Added dot to keep beginning spaces
-                           temp = temp.substring(1); //get rid of dot
-                           spacesBefore = temp.length() - temp.trim().length(); //length with spaces - length without spaces.
-                        }
-                        pos += words[i].length() + spacesBefore;
-                        if (cursor <= pos) {
-                           word = i;
-                           pos -= words[i].length(); //Pos now represents the beginning of the word to replace
-                           break;
-                        }
-                     }
-
-                     str = words[word];
-                  } else {
-                     str = "";
-                  }
-               }
-
-               boolean matched = false;
-               ArrayList<String> matches = new ArrayList<String>();
-               int numMatches = 0;
-               for (int i = 0; i < autoWords.size(); i++) {
-                  String currentWord = autoWords.get(i);
-                  // Tests if a autoword starts with the last input word (str)
-                  if (currentWord.toLowerCase().startsWith(str.toLowerCase())) {
-                     matched = true;
-                     matches.add(currentWord);
-                     tabWord = str;
-                     numMatches++;
-                  }
-               }
-
-               if (matched) {
-                  if (tabPosition >= numMatches) { //If a player leaves in-between tabs tabPosition might be out of bounds
-                     tabPosition = 0;
-                  }
-
-                  if (message.contains(" ")) {
-                     String replace = str;
-                     message = message.substring(0, pos) + matches.get(tabPosition) + message.substring(pos + replace.length(), message.length());
-                     cursor = pos + matches.get(tabPosition).length();
-                  } else {
-                     message = matches.get(tabPosition);
-                     cursor = message.length();
-                  }
-
-                  tabPosition++;
-                  if (tabPosition >= numMatches) {
-                     tabPosition = -1;
-                  }
-               }
-            }
+            updateTabPos(1);
          }
+         return;
       }
 
       // Single key validation
@@ -833,11 +781,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
             break;
 
          case Keyboard.KEY_DELETE:
+            resetTabbing();
             delete();
-            break;
-
-         case Keyboard.KEY_TAB:
-            //moved
             break;
 
          case Keyboard.KEY_BACK:
@@ -880,6 +825,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             clearHighlighting();
             break;
          default:
+            resetTabbing();
             // Verifies that the character is in the character set before adding
             if (updateCounter != 0) {
                if (CLOSE_WITH_OPEN_KEY && id == mod_Console.openKey.keyCode) {
@@ -912,7 +858,86 @@ public class GuiConsole extends GuiScreen implements Runnable {
             }
       }
    }
+   
+   /**
+    * Resets tabbing values an progress
+    */
+   public void resetTabbing()
+   {
+      tabbing = false;
+      tabListPos = 0;
+      tabMatchingWord = "";
+      tabMatchedWord = "";
+   }
+   
+   public void updateTabPos(int Diff)
+   {
+      List<String> autoWords = getAutoPossibility();//list of all possible words
+      if (autoWords != null) {
+         
+         if(tabbing == false)
+         {
+            //find the last word
+            if (message == null || message.length() == 0) {
+               tabMatchingWord = "";
+               tabWordPos = 0;
+            } else if (message.endsWith(" ")) {
+               tabMatchingWord = "";
+               tabWordPos = message.length();
+            } else if (message.contains(" ")) {
+               String [] splitMessage = message.split(" ");
+               tabMatchingWord = splitMessage[splitMessage.length - 1];
+               tabWordPos = message.length() - tabMatchingWord.length();
+            } else {
+               tabMatchingWord = message;
+               tabWordPos = 0;
+            }
+         }
+         
+         ArrayList<String> matches = new ArrayList<String>();
+         tabMaxPos = 0;
+         if(tabMatchingWord == null){
+            tabMaxPos = autoWords.size();
+            matches.addAll(autoWords);
+         } else {
+            for (int i = 0; i < autoWords.size(); i++) {
+               String currentWord = autoWords.get(i);
+               // Tests if a autoword starts with the matching word
+               if (currentWord.toLowerCase().startsWith(tabMatchingWord.toLowerCase())) {
+                  matches.add(currentWord);
+               }
+            }
+            tabMaxPos = matches.size();
+         }
 
+         if (matches.size() > 0) {
+            
+            if(tabbing)
+               tabListPos += Diff;
+            else
+               tabbing = true;
+            
+            //check for see if out of bound
+            tabListPos = (tabListPos >= tabMaxPos)? 0 : tabListPos;
+            tabListPos = (tabListPos < 0)? tabMaxPos - 1 : tabListPos;
+            
+            //tabListPos = (tabListPos > tabMaxPos)? tabMaxPos : tabListPos; //if player leaves whiles browsing words
+            tabMatchedWord = matches.get(tabListPos);
+            
+            if(message.length() > 0) {
+               message = message.substring(0, tabWordPos) + tabMatchedWord;
+            } else {
+               message = tabMatchedWord;
+            }
+            
+            
+            cursor = message.length();
+            
+            
+         }
+      }
+   }
+   
    /**
     * Returns true if the current game is being player on a server
     *
@@ -1453,7 +1478,19 @@ public class GuiConsole extends GuiScreen implements Runnable {
       validateCursor();
       validateOffset();
       drawString(this.mc.fontRenderer, input, textbox_minx + BORDERSIZE, textbox_miny + 1, COLOR_INPUT_TEXT);
-
+      
+      if(tabbing)
+      {
+         String currentPos = String.valueOf(tabListPos + 1);
+         String endPos = String.valueOf(tabMaxPos);
+         int charDiff = endPos.length() - currentPos.length();
+         for (int i = 0; i < charDiff; i++) {
+            currentPos = "0" + currentPos;
+         }
+         String positionText = "[" + currentPos + "/" + endPos + "]";
+         drawString(this.mc.fontRenderer, positionText, textbox_maxx - positionText.length()*6 - BORDERSIZE, textbox_miny + 1, COLOR_INPUT_TEXT);
+      }
+      
       // Titlebar
       drawRect(maxx / 2, 0, maxx, miny, COLOR_BASE);
 
@@ -1571,7 +1608,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             lastSliding = mousey;
             initialSliding = slider;
          } else if (hitTest(mousex, mousey, TEXT_BOX)) {
-            tabPosition = 0;
+            resetTabbing();
             isHighlighting = true;
             initialHighlighting[0] = lastHighlighting[0] = -1;
             int mousexCorrected = mousex - TEXT_BOX[0] - BORDERSIZE;
@@ -1594,7 +1631,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                initialHighlighting[1] = charat;
             cursor = lastHighlighting[1] = initialHighlighting[1];
          } else if (hitTest(mousex, mousey, HISTORY)) {
-            tabPosition = 0;
+            resetTabbing();
             isHighlighting = true;
             int mousexCorrected = mousex - HISTORY[0] - BORDERSIZE;
             int lineAt = correctYlineAt(mousey);
@@ -1661,7 +1698,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             }
             validateOffset();
          } else if (hitTest(mousex, mousey, HISTORY)) {
-            tabPosition = 0;
+            resetTabbing();
             isHighlighting = true;
             int mousexCorrected = mousex - HISTORY[0] - BORDERSIZE;
             int lineAt = correctYlineAt(mousey);
