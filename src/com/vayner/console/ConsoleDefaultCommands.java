@@ -45,7 +45,7 @@ public class ConsoleDefaultCommands {
       }
       
       try {
-         Class helper = Class.forName("PlayerHelper",false,null);
+         Class helper = Class.forName("PlayerHelper");
          
          commands.addAll(getSPCcommands());
          Collections.sort(commands);
