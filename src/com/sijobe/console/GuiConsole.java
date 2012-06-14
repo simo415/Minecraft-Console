@@ -29,6 +29,7 @@ import net.minecraft.src.ChatLine;
 import net.minecraft.src.EntityClientPlayerMP;
 import net.minecraft.src.FontRenderer;
 import net.minecraft.src.GuiIngame;
+import net.minecraft.src.GuiModScreen;
 import net.minecraft.src.GuiPlayerInfo;
 import net.minecraft.src.GuiScreen;
 import net.minecraft.src.KeyBinding;
@@ -41,6 +42,7 @@ import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
 
 import com.vayner.console.ConsoleChatCommands;
+import com.vayner.console.guiapi.ConsoleSettings;
 
 /**
  * @formatter:off
@@ -54,7 +56,7 @@ import com.vayner.console.ConsoleChatCommands;
  *                TODO: P1 - Add ability to disable settings loader (in code) and ability to reset the settings ingame
  *                TODO: P3 - Dynamic settings screen, configure any setting in an easy to use GUI
  *
- * @author simo_415
+ * @author simo_415, tellefma
  *
  *         This program is free software: you can redistribute it and/or modify
  *         it under the terms of the GNU Lesser General Public License as published by
@@ -99,7 +101,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private int tabWordPos;                                           // start place of tabWord
    private String tabMatchingWord;                                   // The current word checking to
    private String tabMatchedWord;                                    // The current word matched to
-
+   private ArrayList<String> tabCurrentList;                         // The current List matching words
+   
    private volatile HashMap<String,String> keyBindings;              // All the current key bindings
    private volatile List<Integer> keyDown;                           // List of all the keys currently held down
    private static boolean BACKGROUND_BINDING_EVENTS = false;         // Allows the bindings to run ingame with different GUIs open
@@ -125,8 +128,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int[] TOP;                                         // Poor implementation to keep track of drawn scrollbar top button
    private static int[] BOTTOM;                                      // Poor implementation to keep track of drawn scrollbar bottom button
    private static int[] BAR;                                         // Poor implementation to keep track of drawn scrollbar
-   private static int[] EXIT;                                        // Poor implementation to keep track of drawn exit button
-   private static int[] TEXT_BOX;												// Poor implementation to keep track of drawn text box
+   private static int[] EXIT_BUTTON;                                 // Poor implementation to keep track of drawn exit button
+   private static int[] OPTION_BUTTON;                               // Poor implementation to keep track of drawn option button
+   private static int[] TEXT_BOX;                                    // Poor implementation to keep track of drawn text box
    private static int[] HISTORY;                                     // Poor implementation to keep track of drawn history field
 
    private static int CHARHEIGHT = 10;                               // Character height - used to quickly determine number of lines per view
@@ -165,7 +169,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    private static int LINES_PER_SCROLL = 1;                          // The number of lines to scroll in one scroll wheel click
 
-   private static int BORDERSIZE = 2;                                // Size of the border
+   private static int SCREEN_BORDERSIZE = 2;                         // Size of the border
    private static int SCREEN_PADDING_LEFT = 5;                       // Size of the screen padding - left
    private static int SCREEN_PADDING_TOP = 12;                       // Size of the screen padding - top
    private static int SCREEN_PADDING_RIGHT = 5;                      // Size of the screen padding - right
@@ -174,17 +178,17 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int COLOR_BASE = 0x90000000;                       // Base colour to use for console
    private static int COLOR_SCROLL_BACKGROUND = 0xBB999999;          // Scroll background colour
    private static int COLOR_SCROLL_FOREGROUND = 0xBB404040;          // Scroll foreground colour
-   private static int COLOR_INPUT_TEXT = 0xE0E0E0;                   // Colour of the input text
-   private static int COLOR_TEXT_OUTPUT = 0xE0E0E0;                  // Colour of the text output
-   private static int COLOR_TEXT_TITLE = 0xE0E0E0;                   // Colour of the text title
+   private static int COLOR_INPUT_TEXT = 0xFFE0E0E0;                 // Colour of the input text
+   private static int COLOR_TEXT_OUTPUT = 0xFFE0E0E0;                // Colour of the text output
+   private static int COLOR_TEXT_TITLE = 0xFFE0E0E0;                 // Colour of the text title
    private static int COLOR_TEXT_HIGHLIGHT = 0xFF2090DD;             // Colour of the text highlighting
-   private static int COLOR_SCROLL_ARROW = 0xFFFFFF;                 // Colour of the scroll arrow
-   private static int COLOR_EXIT_BUTTON_TEXT = 0xFFFFFF;             // Colour of the exit button label
+   private static int COLOR_SCROLL_ARROW = 0xFFFFFFFF;               // Colour of the scroll arrow
+   private static int COLOR_EXIT_BUTTON_TEXT = 0xFFFFFFFF;           // Colour of the exit button label
    private static int COLOR_EXIT_BUTTON = 0xBB999999;                // Colour of the exit button
    private static int COLOR_OUTPUT_BACKGROUND = 0xBB999999;          // Colour of the output background
    private static int COLOR_INPUT_BACKGROUND = 0xBB999999;           // Colour of the input background
 
-   public static final String VERSION = "1.2.2 beta";                    // Version of the mod
+   public static final String VERSION = "1.3.1 alpha";               // Version of the mod  
    private static String TITLE = "Console";                          // Title of the console
 
    private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
@@ -196,9 +200,12 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static GuiConsole INSTANCE;                               // Instance of the class for singleton pattern
 
    private static boolean EMACS_KEYS = false;                        // Use emacs keybindings
-   private static int AUTOCOMPLETE_KEY = Keyboard.KEY_TAB;           // Autocomlete keybinding
-   private static int AUTOPREV_KEY = Keyboard.KEY_LEFT;
-   private static int AUTONEXT_KEY = Keyboard.KEY_RIGHT;
+   
+   private static boolean SCREEN_AUTOPREVIEW = true;                 // Turn on or off preview off matched words
+   private static int SCREEN_AUTOPREVIEWAREA = 140;                  // width of preview area
+   private static int KEY_AUTOCOMPLETE = Keyboard.KEY_TAB;           // Autocomlete keybinding
+   private static int KEY_AUTOPREV = Keyboard.KEY_LEFT;              // Next match
+   private static int KEY_AUTONEXT = Keyboard.KEY_RIGHT;             // Previous match
 
    /* @formatter:on */
 
@@ -220,7 +227,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       TOP = new int[4];
       BOTTOM = new int[4];
       BAR = new int[4];
-      EXIT = new int[4];
+      EXIT_BUTTON = new int[4];
       TEXT_BOX = new int[4];
       INSTANCE = new GuiConsole();
       if (!MOD_DIR.exists()) {
@@ -617,22 +624,22 @@ public class GuiConsole extends GuiScreen implements Runnable {
       
       if(tabbing)
       {
-         if(id == AUTONEXT_KEY)
+         if(id == KEY_AUTONEXT)
          {
             updateTabPos(1);
             return;
          }
-         else if(id == AUTOPREV_KEY)
+         else if(id == KEY_AUTOPREV)
          {
             updateTabPos(-1);
             return;
          }
       }
       
-      if (id != AUTOCOMPLETE_KEY && id != AUTOPREV_KEY && id != AUTONEXT_KEY) {
+      if (id != KEY_AUTOCOMPLETE && id != KEY_AUTONEXT && id != KEY_AUTOPREV && id != Keyboard.KEY_BACK) {
          resetTabbing();
       }
-      else if(id == AUTOCOMPLETE_KEY)
+      else if(id == KEY_AUTOCOMPLETE)
       {
          clearHighlighting();
          if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
@@ -710,6 +717,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             inputOffset = 0;
             historyPosition = 0;
             clearHighlighting();
+            resetTabbing();
             break;
 
          case Keyboard.KEY_LEFT:
@@ -787,6 +795,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
          case Keyboard.KEY_BACK:
             // Backspace
+            if(tabbing) {
+               message = message.substring(0,tabWordPos) + tabMatchingWord;
+               resetTabbing();
+               break;
+            }
             if (message.length() > 0) {
                if (initialHighlighting[1] == lastHighlighting[1] || initialHighlighting[0] != -1 || lastHighlighting[0] != -1) {
                   validateCursor();
@@ -866,10 +879,15 @@ public class GuiConsole extends GuiScreen implements Runnable {
    {
       tabbing = false;
       tabListPos = 0;
+      tabWordPos = 0;
       tabMatchingWord = "";
       tabMatchedWord = "";
    }
    
+   /**
+    * Updates / starts the tabbing progress with appropriate offset
+    * @param Diff is the offset value for the list
+    */
    public void updateTabPos(int Diff)
    {
       List<String> autoWords = getAutoPossibility();//list of all possible words
@@ -894,23 +912,23 @@ public class GuiConsole extends GuiScreen implements Runnable {
             }
          }
          
-         ArrayList<String> matches = new ArrayList<String>();
+         tabCurrentList = new ArrayList<String>(); 
          tabMaxPos = 0;
          if(tabMatchingWord == null){
             tabMaxPos = autoWords.size();
-            matches.addAll(autoWords);
+            tabCurrentList.addAll(autoWords);
          } else {
             for (int i = 0; i < autoWords.size(); i++) {
                String currentWord = autoWords.get(i);
                // Tests if a autoword starts with the matching word
                if (currentWord.toLowerCase().startsWith(tabMatchingWord.toLowerCase())) {
-                  matches.add(currentWord);
+                  tabCurrentList.add(currentWord);
                }
             }
-            tabMaxPos = matches.size();
+            tabMaxPos = tabCurrentList.size();
          }
 
-         if (matches.size() > 0) {
+         if (tabCurrentList.size() > 0) {
             
             if(tabbing)
                tabListPos += Diff;
@@ -922,7 +940,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             tabListPos = (tabListPos < 0)? tabMaxPos - 1 : tabListPos;
             
             //tabListPos = (tabListPos > tabMaxPos)? tabMaxPos : tabListPos; //if player leaves whiles browsing words
-            tabMatchedWord = matches.get(tabListPos);
+            tabMatchedWord = tabCurrentList.get(tabListPos);
             
             if(message.length() > 0) {
                message = message.substring(0, tabWordPos) + tabMatchedWord;
@@ -1114,9 +1132,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
       String end = message.substring(cursor, message.length());
       input = INPUT_PREFIX + start + ((updateCounter / 8) % 2 != 0 ? "." : "!") + end;
 
-      if (fontRenderer.getStringWidth(input) >= TEXT_BOX[2] - TEXT_BOX[0] - BORDERSIZE * 2) {
+      if (fontRenderer.getStringWidth(input) >= TEXT_BOX[2] - TEXT_BOX[0] - SCREEN_BORDERSIZE * 2) {
          int upperbound = input.length();
-         int boxsize = TEXT_BOX[2] - TEXT_BOX[0] - BORDERSIZE * 2;
+         int boxsize = TEXT_BOX[2] - TEXT_BOX[0] - SCREEN_BORDERSIZE * 2;
 
          if (inputOffset < 0) {
             inputOffset = 0;
@@ -1276,10 +1294,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
       drawRect(minx, miny, maxx, maxy, COLOR_BASE);
 
       // Input Text box
-      int textbox_minx = minx + BORDERSIZE;
-      int textbox_maxx = maxx - BORDERSIZE;
-      int textbox_miny = maxy - CHARHEIGHT - BORDERSIZE;
-      int textbox_maxy = maxy - BORDERSIZE;
+      int textbox_minx = minx + SCREEN_BORDERSIZE;
+      int textbox_maxx = maxx - SCREEN_BORDERSIZE;
+      int textbox_miny = maxy - CHARHEIGHT - SCREEN_BORDERSIZE;
+      int textbox_maxy = maxy - SCREEN_BORDERSIZE;
       drawRect(textbox_minx, textbox_miny, textbox_maxx, textbox_maxy, COLOR_INPUT_BACKGROUND);
       TEXT_BOX = new int[] { textbox_minx, textbox_miny, textbox_maxx, textbox_maxy };
 
@@ -1338,11 +1356,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
       }
 
       // Past messages - dialog
-      int message_miny = miny + BORDERSIZE;
-      int message_maxy = textbox_miny - BORDERSIZE;
-      if (textbox_minx != MESSAGE_MINX || MESSAGE_MAXX != maxx - (BORDERSIZE * 2) - 10) {
+      int message_miny = miny + SCREEN_BORDERSIZE;
+      int message_maxy = textbox_miny - SCREEN_BORDERSIZE;
+      if (textbox_minx != MESSAGE_MINX || MESSAGE_MAXX != maxx - (SCREEN_BORDERSIZE * 2) - 10) {
          MESSAGE_MINX = textbox_minx;
-         MESSAGE_MAXX = maxx - (BORDERSIZE * 2) - 10;
+         MESSAGE_MAXX = maxx - (SCREEN_BORDERSIZE * 2) - 10;
          buildLines();
       }
 
@@ -1374,8 +1392,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
 
          int[] rect = new int[4];
-         int xoffset = HISTORY[0] + BORDERSIZE;
-         int yoffset = HISTORY[1] + BORDERSIZE;
+         int xoffset = HISTORY[0] + SCREEN_BORDERSIZE;
+         int yoffset = HISTORY[1] + SCREEN_BORDERSIZE;
 
          //initial
          int h_minx = xoffset + fontRenderer.getStringWidth(LINES.get(initialHighlighting[0]).substring(0, initialHighlighting[1])) - 1;
@@ -1434,14 +1452,14 @@ public class GuiConsole extends GuiScreen implements Runnable {
          int element = LINES.size() - 1 - i - slider;
          if (LINES.size() <= element)
             continue;
-         drawString(this.mc.fontRenderer, LINES.elementAt(element), MESSAGE_MINX + BORDERSIZE, textbox_miny - CHARHEIGHT + 1 - BORDERSIZE - ((i + oversize) * (CHARHEIGHT - 1)), COLOR_TEXT_OUTPUT);
+         drawString(this.mc.fontRenderer, LINES.elementAt(element), MESSAGE_MINX + SCREEN_BORDERSIZE, textbox_miny - CHARHEIGHT + 1 - SCREEN_BORDERSIZE - ((i + oversize) * (CHARHEIGHT - 1)), COLOR_TEXT_OUTPUT);
       }
 
       // Scroll - background
-      int scroll_minx = MESSAGE_MAXX + BORDERSIZE;
+      int scroll_minx = MESSAGE_MAXX + SCREEN_BORDERSIZE;
       int scroll_maxx = textbox_maxx;
       int scroll_miny = message_miny;
-      int scroll_maxy = textbox_miny - BORDERSIZE;
+      int scroll_maxy = textbox_miny - SCREEN_BORDERSIZE;
       drawRect(scroll_minx, scroll_miny, scroll_maxx, scroll_maxy, COLOR_SCROLL_BACKGROUND);
 
       // Scroll - button top
@@ -1477,30 +1495,51 @@ public class GuiConsole extends GuiScreen implements Runnable {
       // Input
       validateCursor();
       validateOffset();
-      drawString(this.mc.fontRenderer, input, textbox_minx + BORDERSIZE, textbox_miny + 1, COLOR_INPUT_TEXT);
+      drawString(this.mc.fontRenderer, input, textbox_minx + SCREEN_BORDERSIZE, textbox_miny + 1, COLOR_INPUT_TEXT);
       
-      if(tabbing)
+      //autocomplete wordmatch visual
+      if(tabbing && SCREEN_AUTOPREVIEW)
       {
+         int tabStartPos = fontRenderer.getStringWidth(INPUT_PREFIX + " " + message.substring(0, tabWordPos));
+         if(tabStartPos + SCREEN_AUTOPREVIEWAREA > width)
+            tabStartPos = width - SCREEN_AUTOPREVIEWAREA;
+         
+         drawRect(textbox_minx - SCREEN_BORDERSIZE*2 + tabStartPos, textbox_maxy + SCREEN_BORDERSIZE, tabStartPos + SCREEN_AUTOPREVIEWAREA, height, COLOR_BASE);
+         
          String currentPos = String.valueOf(tabListPos + 1);
          String endPos = String.valueOf(tabMaxPos);
          int charDiff = endPos.length() - currentPos.length();
          for (int i = 0; i < charDiff; i++) {
             currentPos = "0" + currentPos;
          }
+         
          String positionText = "[" + currentPos + "/" + endPos + "]";
-         drawString(this.mc.fontRenderer, positionText, textbox_maxx - positionText.length()*6 - BORDERSIZE, textbox_miny + 1, COLOR_INPUT_TEXT);
+         drawString(this.mc.fontRenderer, positionText, textbox_minx + tabStartPos - SCREEN_BORDERSIZE, textbox_maxy + SCREEN_BORDERSIZE + CHARHEIGHT*3, COLOR_INPUT_TEXT);
+         
+         
+         for (int i = 0; i < 3; i++) {
+            drawString(this.mc.fontRenderer, tabCurrentList.get((tabListPos + i + 1)%(tabMaxPos)), textbox_minx + tabStartPos - SCREEN_BORDERSIZE, textbox_maxy + SCREEN_BORDERSIZE + i*CHARHEIGHT, COLOR_INPUT_TEXT);
+         }
       }
       
       // Titlebar
       drawRect(maxx / 2, 0, maxx, miny, COLOR_BASE);
 
       // Title
-      drawString(this.mc.fontRenderer, TITLE, (maxx / 2) + BORDERSIZE, BORDERSIZE, COLOR_TEXT_TITLE);
-
+      drawString(this.mc.fontRenderer, TITLE, (maxx / 2) + SCREEN_BORDERSIZE, SCREEN_BORDERSIZE, COLOR_TEXT_TITLE);
+      
+      // Options button button
+      OPTION_BUTTON = new int[] { maxx - SCREEN_BORDERSIZE*2 - 20, SCREEN_BORDERSIZE, maxx - SCREEN_BORDERSIZE*2 -10, miny };
+      
+      drawRect( OPTION_BUTTON[0], OPTION_BUTTON[1], OPTION_BUTTON[2], OPTION_BUTTON[3], COLOR_EXIT_BUTTON );
+      drawString(this.mc.fontRenderer, "|:.", maxx - SCREEN_BORDERSIZE*2 - 18, SCREEN_BORDERSIZE + 2, COLOR_EXIT_BUTTON_TEXT);
+      
       // Exit button
-      drawRect(maxx - BORDERSIZE - 10, BORDERSIZE, maxx - BORDERSIZE, miny, COLOR_EXIT_BUTTON);
-      drawString(this.mc.fontRenderer, "X", maxx - BORDERSIZE - 7, BORDERSIZE + 2, COLOR_EXIT_BUTTON_TEXT);
-      EXIT = new int[] { maxx - BORDERSIZE - 10, BORDERSIZE, maxx - BORDERSIZE, miny };
+      EXIT_BUTTON = new int[] { maxx - SCREEN_BORDERSIZE - 10, SCREEN_BORDERSIZE, maxx - SCREEN_BORDERSIZE, miny };
+      
+      drawRect( EXIT_BUTTON[0], EXIT_BUTTON[1], EXIT_BUTTON[2], EXIT_BUTTON[3], COLOR_EXIT_BUTTON );
+      drawString(this.mc.fontRenderer, "X", maxx - SCREEN_BORDERSIZE - 7, SCREEN_BORDERSIZE + 2, COLOR_EXIT_BUTTON_TEXT);
+      
 
       super.drawScreen(mousex, mousey, f);
    }
@@ -1595,11 +1634,16 @@ public class GuiConsole extends GuiScreen implements Runnable {
    protected void mouseClicked(int mousex, int mousey, int button) {
       if (button == 0) {
          // Bad implementation which checks for clicks on exit button
-         if (hitTest(mousex, mousey, EXIT)) {
+         if (hitTest(mousex, mousey, EXIT_BUTTON)) {
             mc.displayGuiScreen(null);
+            resetTabbing();
             return;
-            // Bad implementation which checks for clicks on scrollbar
-         } else if (hitTest(mousex, mousey, TOP))
+         } else if (mod_Console.GuiApiInstalled() && hitTest(mousex, mousey, OPTION_BUTTON)){
+            GuiModScreen.show(ConsoleSettings.consoleSettingsScreen.theWidget);
+            resetTabbing();
+            return;
+         // Bad implementation which checks for clicks on scrollbar
+         }else if (hitTest(mousex, mousey, TOP))
             slider++;
          else if (hitTest(mousex, mousey, BOTTOM))
             slider--;
@@ -1611,7 +1655,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             resetTabbing();
             isHighlighting = true;
             initialHighlighting[0] = lastHighlighting[0] = -1;
-            int mousexCorrected = mousex - TEXT_BOX[0] - BORDERSIZE;
+            int mousexCorrected = mousex - TEXT_BOX[0] - SCREEN_BORDERSIZE;
             int startStringIndex = 0;
             int cutPrefixChars = (inputOffset <= INPUT_PREFIX.length() ? inputOffset : INPUT_PREFIX.length());
             if (inputOffset < INPUT_PREFIX.length()) {
@@ -1633,7 +1677,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          } else if (hitTest(mousex, mousey, HISTORY)) {
             resetTabbing();
             isHighlighting = true;
-            int mousexCorrected = mousex - HISTORY[0] - BORDERSIZE;
+            int mousexCorrected = mousex - HISTORY[0] - SCREEN_BORDERSIZE;
             int lineAt = correctYlineAt(mousey);
             initialHighlighting[0] = lineAt;
             int charAt = mouseAt(mousexCorrected, LINES.get(lineAt));
@@ -1670,7 +1714,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          }
       } else if (isHighlighting) {
          if (hitTest(mousex, mousey, TEXT_BOX) || initialHighlighting[0] == -1) {
-            int mousexCorrected = mousex - TEXT_BOX[0] - BORDERSIZE;
+            int mousexCorrected = mousex - TEXT_BOX[0] - SCREEN_BORDERSIZE;
             int startStringIndex = 0;
 
             if (inputOffset < INPUT_PREFIX.length()) {
@@ -1700,7 +1744,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
          } else if (hitTest(mousex, mousey, HISTORY)) {
             resetTabbing();
             isHighlighting = true;
-            int mousexCorrected = mousex - HISTORY[0] - BORDERSIZE;
+            int mousexCorrected = mousex - HISTORY[0] - SCREEN_BORDERSIZE;
             int lineAt = correctYlineAt(mousey);
             lastHighlighting[0] = lineAt;
             int charAt = mouseAt(mousexCorrected, LINES.get(lineAt));
@@ -1716,7 +1760,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    {
       int maxDisplayedLines = (HISTORY[3] - HISTORY[1]) / (CHARHEIGHT - 1);
       int linesDisplayed = LINES.size() >= maxDisplayedLines ? maxDisplayedLines : LINES.size();
-      int mouseyCorrected = mousey - HISTORY[1] - BORDERSIZE;
+      int mouseyCorrected = mousey - HISTORY[1] - SCREEN_BORDERSIZE;
       int lineAt = mouseyCorrected / (CHARHEIGHT - 1) + LINES.size() - linesDisplayed - slider;
 
       if (lineAt >= LINES.size()) {
@@ -2059,5 +2103,44 @@ public class GuiConsole extends GuiScreen implements Runnable {
       } catch (Exception e) {
          e.printStackTrace();
       }
+   }
+   
+   /**
+    * Reads the static non final fields and return all of type
+    * String, Double, Boolean, Long, Byte, Float, Short, Character
+    *
+    * @param base - The class to get the fields from
+    * @return ArrayList<Field> containing all option fields
+    */
+   public static ArrayList<Field> returnSettingsFields(Class<?> base) {
+      ArrayList<Field> fields = new ArrayList<Field>();
+      try {
+         Field[] declaredFields = base.getDeclaredFields();
+         for (Field field : declaredFields) {
+            if (Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers())) {
+               try {
+                  if (!field.isAccessible()) {
+                     field.setAccessible(true);
+                  }
+
+                  if (field.getType().equals(String.class) ||
+                           field.getType().equals(Integer.TYPE) || 
+                           field.getType().equals(Double.TYPE) ||
+                           field.getType().equals(Boolean.TYPE) ||
+                           field.getType().equals(Long.TYPE) ||
+                           field.getType().equals(Byte.TYPE) ||
+                           field.getType().equals(Float.TYPE) ||
+                           field.getType().equals(Short.TYPE) ||
+                           field.getType().equals(Character.TYPE)) {
+                    fields.add(field); 
+                  }
+               } catch (Exception e) {
+               }
+            }
+         }
+      } catch (Exception e) {
+         e.printStackTrace();
+      }
+      return fields;
    }
 }

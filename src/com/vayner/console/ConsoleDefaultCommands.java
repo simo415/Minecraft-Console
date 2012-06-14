@@ -6,8 +6,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
-import net.minecraft.src.ModLoader;
 import net.minecraft.src.PlayerHelper;
+import net.minecraft.src.SPCPlugin;
+import net.minecraft.src.SPCPluginManager;
+import net.minecraft.src.mod_Console;
+import net.minecraft.src.spc_AprilFools2012;
 
 /**
  *
@@ -37,34 +40,35 @@ public class ConsoleDefaultCommands {
    {
       List<String> commands = new ArrayList();
       
-      if(ModLoader.getMinecraftInstance().session.username.equals("MCPTEST"))
+      if(mod_Console.SPCInstalled())
       {
          commands.addAll(getSPCcommands());
-         Collections.sort(commands);
-         return commands;
       }
       
-      try {
-         Class helper = Class.forName("PlayerHelper");
-         
-         commands.addAll(getSPCcommands());
-         Collections.sort(commands);
-      } catch (ClassNotFoundException e) {
-         System.out.println("Single Player Commands 'PlayerHelper.class' not found, unable to retrive commands for SPC");
-      }
+      Collections.sort(commands);
 
       return commands;
    }
    
    private static ArrayList<String> getSPCcommands()
    {
-      Set SPC_cmd = PlayerHelper.CMDS.keySet();
       ArrayList<String> commands = new ArrayList<String>();
+      
+      Set SPC_cmd = PlayerHelper.CMDS.keySet();
+      List<SPCPlugin> SPC_pluginCmd = SPCPluginManager.getPluginManager().getPlugins();
       
       for (Object entry : SPC_cmd) {
          if(entry instanceof String)
          {
             commands.add((String)entry);
+         }
+      }
+      
+      for (SPCPlugin spcPlugin : SPC_pluginCmd) {
+         if(spcPlugin.getCommands() == null)
+            continue;
+         for (String string : spcPlugin.getCommands()) {
+            commands.add(string);
          }
       }
       
