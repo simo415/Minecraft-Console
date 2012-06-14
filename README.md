@@ -110,6 +110,7 @@ Downloads
  - [*Latest version*](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_latest.zip)
  - [*Latest Build/Snapshot*](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_Snapshot.zip)
 
+ - [Version 1.3](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_1.3.zip)
  - [Version 1.2.1](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_1.2.1.zip)
  - [Version 1.2 fixed](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_1.2.zip)
  - [Version 1.2](http://dl.dropbox.com/u/8016309/Minecraft%20Console/Minecraft_Console_1.2.zip)
