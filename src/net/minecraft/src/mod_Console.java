@@ -50,7 +50,7 @@ public class mod_Console extends BaseMod {
    @Override
    public void load() {
       try {
-         Class helper = Class.forName("PlayerHelper", false, null);
+         Class helper = Class.forName("PlayerHelper");
          SPCInstalled = true;
       } catch (ClassNotFoundException e) {
          System.out.println("Single Player Commands 'PlayerHelper.class' not found, unable to retrive commands for SPC");
@@ -58,7 +58,7 @@ public class mod_Console extends BaseMod {
       }
       
       try {
-         Class test = Class.forName("ModSettings", false, null);
+         Class test = Class.forName("ModSettings");
          guiApiInstalled = true;
       } catch (ClassNotFoundException e) {
          System.out.println("GuiApi not installed, settings adjustment ingame will not be avaiable");
