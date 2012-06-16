@@ -13,6 +13,7 @@ import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -49,7 +50,7 @@ import com.vayner.console.guiapi.ConsoleSettings;
  *                TODO: P1 - Only save logs for the current world
  *                TODO: P1 - Output filtering - allow blocking of certain text/people
  *                DONE: p2 - Text selection in the chat-history field (copy text)
- *                TODO: P2 - Spinner (tab auto complete)
+ *                DONE: P2 - Spinner (tab auto complete) (probably)
  *                TODO: P3 - Drop down menus
  *                TODO: P2 - Improve look and feel
  *                TODO: P2 - Custom text color support. Holding CTRL then type a number will set the text to that color [0-f] - (0-15)
@@ -188,7 +189,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int COLOR_OUTPUT_BACKGROUND = 0xBB999999;          // Colour of the output background
    private static int COLOR_INPUT_BACKGROUND = 0xBB999999;           // Colour of the input background
 
-   public static final String VERSION = "1.3.1 alpha";               // Version of the mod  
+   public static final String VERSION = "1.3.2 alpha";               // Version of the mod  
    private static String TITLE = "Console";                          // Title of the console
 
    private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
@@ -196,9 +197,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
    // Mod directory
    public static File MOD_DIR = new File(Minecraft.getMinecraftDir(), MOD_PATH);
    private static File LOG_DIR;                                      // Log directory
+   private static File GUI_SETTINGS_FILE = new File(MOD_DIR, "gui.properties");
 
    private static GuiConsole INSTANCE;                               // Instance of the class for singleton pattern
-
+   private static ArrayList<Field> defaultSettings;
+   
    private static boolean EMACS_KEYS = false;                        // Use emacs keybindings
    
    private static boolean SCREEN_AUTOPREVIEW = true;                 // Turn on or off preview off matched words
@@ -213,10 +216,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * Initialises all of the instance variables
     */
    static {
-      if ((new File(MOD_DIR, "gui.properties")).exists()) {
-         readSettings(GuiConsole.class, new File(MOD_DIR, "gui.properties"));
+      defaultSettings = returnSettingsFields(GuiConsole.class);
+      if (GUI_SETTINGS_FILE.exists()) {
+         readSettings(GuiConsole.class, GUI_SETTINGS_FILE);
       }
-      writeSettings(GuiConsole.class, new File(MOD_DIR, "gui.properties"));
+      writeSettings(GuiConsole.class, GUI_SETTINGS_FILE);
       LOG_DIR = new File(Minecraft.getMinecraftDir(), LOG_PATH);
       ALLOWED_CHARACTERS = ChatAllowedCharacters.allowedCharacters;
       MESSAGES = new Vector<String>();
@@ -1529,10 +1533,13 @@ public class GuiConsole extends GuiScreen implements Runnable {
       drawString(this.mc.fontRenderer, TITLE, (maxx / 2) + SCREEN_BORDERSIZE, SCREEN_BORDERSIZE, COLOR_TEXT_TITLE);
       
       // Options button button
-      OPTION_BUTTON = new int[] { maxx - SCREEN_BORDERSIZE*2 - 20, SCREEN_BORDERSIZE, maxx - SCREEN_BORDERSIZE*2 -10, miny };
+      if(mod_Console.GuiApiInstalled()) {
+         OPTION_BUTTON = new int[] { maxx - SCREEN_BORDERSIZE*2 - 20, SCREEN_BORDERSIZE, maxx - SCREEN_BORDERSIZE*2 -10, miny };
       
-      drawRect( OPTION_BUTTON[0], OPTION_BUTTON[1], OPTION_BUTTON[2], OPTION_BUTTON[3], COLOR_EXIT_BUTTON );
-      drawString(this.mc.fontRenderer, "|:.", maxx - SCREEN_BORDERSIZE*2 - 18, SCREEN_BORDERSIZE + 2, COLOR_EXIT_BUTTON_TEXT);
+         drawRect( OPTION_BUTTON[0], OPTION_BUTTON[1], OPTION_BUTTON[2], OPTION_BUTTON[3], COLOR_EXIT_BUTTON );
+         drawString(this.mc.fontRenderer, "|:.", maxx - SCREEN_BORDERSIZE*2 - 18, SCREEN_BORDERSIZE + 2, COLOR_EXIT_BUTTON_TEXT);
+      }
+      
       
       // Exit button
       EXIT_BUTTON = new int[] { maxx - SCREEN_BORDERSIZE - 10, SCREEN_BORDERSIZE, maxx - SCREEN_BORDERSIZE, miny };
@@ -1639,7 +1646,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
             resetTabbing();
             return;
          } else if (mod_Console.GuiApiInstalled() && hitTest(mousex, mousey, OPTION_BUTTON)){
-            GuiModScreen.show(ConsoleSettings.consoleSettingsScreen.theWidget);
+            mc.displayGuiScreen(null);
+            GuiModScreen.show(new GuiModScreen(null, ConsoleSettings.consoleSettingsScreen.theWidget));
             resetTabbing();
             return;
          // Bad implementation which checks for clicks on scrollbar
@@ -1924,7 +1932,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             pullGuiList();
 
             // Empties message list when it hits maximum size
-            while (MESSAGES.size() > OUTPUT_MAX) {
+            while (MESSAGES.size() > OUTPUT_MAX && OUTPUT_MAX != 0) {
                MESSAGES.remove(0);
                rebuildLines = true;
             }
@@ -2142,5 +2150,40 @@ public class GuiConsole extends GuiScreen implements Runnable {
          e.printStackTrace();
       }
       return fields;
+   }
+   
+   public static void setFields(ArrayList<Field> set,Class<?> base) {
+      ArrayList<Field> toSet = returnSettingsFields(base);
+      ArrayList<Field> setValues = set;
+      
+      for (Field fieldToSet : toSet) {
+         innerBreak:
+         for (Field fieldSetValue : setValues) {
+            if(fieldToSet.getName().equals(fieldSetValue.getName())) {
+               try {
+                  fieldToSet.set(null, fieldSetValue.get(null));
+               } catch (IllegalArgumentException e) {
+                  e.printStackTrace();
+               } catch (IllegalAccessException e) {
+                  e.printStackTrace();
+               }
+               break innerBreak;
+            }
+         }
+      }
+      
+   }
+   
+   public static void readGuiConsoleSettings() {
+      readSettings(GuiConsole.class, GUI_SETTINGS_FILE);
+   }
+   
+   public static void writeGuiConsoleSettings() {
+      writeSettings(GuiConsole.class, GUI_SETTINGS_FILE);
+   }
+   
+   public static void resetGuiConsoleSettings() {
+      setFields(defaultSettings,GuiConsole.class);
+      writeGuiConsoleSettings();
    }
 }

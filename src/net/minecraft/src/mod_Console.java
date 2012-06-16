@@ -49,6 +49,13 @@ public class mod_Console extends BaseMod {
    
    @Override
    public void load() {
+      if(ModLoader.getMinecraftInstance().session.username.equals("MCPTEST")) {
+         System.out.println("Username is MCPTEST, assuming running via eclipse with all prerequisits installed");
+         SPCInstalled = true;
+         guiApiInstalled = true;  
+         return;
+      }
+      
       try {
          Class helper = Class.forName("PlayerHelper");
          SPCInstalled = true;
@@ -63,12 +70,6 @@ public class mod_Console extends BaseMod {
       } catch (ClassNotFoundException e) {
          System.out.println("GuiApi not installed, settings adjustment ingame will not be avaiable");
          guiApiInstalled = false;
-      }      
-      
-      if(ModLoader.getMinecraftInstance().session.username.equals("MCPTEST")) {
-         System.out.println("Username is MCPTEST, assuming running via eclipse with all prerequisits installed");
-         SPCInstalled = true;
-         guiApiInstalled = true;  
       }
    }
    

@@ -30,6 +30,7 @@ public class ConsoleSettings {
       consoleSettingsScreen = new ModSettingScreen("Minecraft Console settings");
       
       //initialize every sub window, each in their own class because it is cleaner
-      ColorWindow.createColorWindow(consoleSettingsScreen);
+      ColorWindow.createWindow(consoleSettingsScreen);
+      SettingsFilesWindow.createWindow(consoleSettingsScreen);
    }
 }

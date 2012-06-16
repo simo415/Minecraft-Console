@@ -32,7 +32,7 @@ public class ColorWindow {
    protected static boolean updatingColors = false;
    
    //sets up and create window content
-   protected static void createColorWindow(ModSettingScreen SettingsScreen) {
+   protected static void createWindow(ModSettingScreen SettingsScreen) {
       colorTwoColumns = new WidgetClassicTwocolumn();
       
       colorSelector = new ColorSelector(new ColorSpaceHSL());
@@ -63,7 +63,7 @@ public class ColorWindow {
       //add button from main config page to the new window
       SettingsScreen.append(
                GuiApiHelper.makeButton(
-                  "Open Color selectors",
+                  "Color selector",
                   "show",
                   GuiModScreen.class,
                   true,
