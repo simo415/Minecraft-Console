@@ -49,10 +49,22 @@ public class mod_Console extends BaseMod {
    
    @Override
    public void load() {
-      if(ModLoader.getMinecraftInstance().session.username.equals("MCPTEST")) {
+      String playername = ModLoader.getMinecraftInstance().session.username;
+      GuiConsole.getInstance();
+      if(playername.equals("MCPTEST")) {
          System.out.println("Username is MCPTEST, assuming running via eclipse with all prerequisits installed");
          SPCInstalled = true;
          guiApiInstalled = true;  
+         return;
+      } else if (playername.equals("GUIAPI")) {
+         System.out.println("Username is GUIAPI, assuming running via eclipse with ModLoader and GuiApi installed");
+         SPCInstalled = false;
+         guiApiInstalled = true;  
+         return;
+      } else if (playername.equals("MODLOADER")) {
+         System.out.println("Username is MODLOADER, assuming running via eclipse with only ModLoader installed");
+         SPCInstalled = false;
+         guiApiInstalled = false;  
          return;
       }
       
@@ -71,6 +83,22 @@ public class mod_Console extends BaseMod {
          System.out.println("GuiApi not installed, settings adjustment ingame will not be avaiable");
          guiApiInstalled = false;
       }
+   }
+   
+   /**
+    * Passes on messages sent by the client
+    */
+   @Override
+   public void clientChat(String var1) {
+      GuiConsole.getInstance().addClientMessage(var1);
+	}
+   
+   /**
+    * Passes on messages received from the server
+    */
+   @Override
+   public void serverChat(NetServerHandler var1, String var2) {
+      GuiConsole.getInstance().addServerMessage(var1, var2);
    }
    
    public void modsLoaded() {

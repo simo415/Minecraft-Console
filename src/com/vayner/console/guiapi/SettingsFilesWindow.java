@@ -12,8 +12,11 @@ import net.minecraft.src.WidgetSimplewindow;
 import net.minecraft.src.WidgetSinglecolumn;
 
 
-public class SettingsFilesWindow {
-
+public class SettingsFilesWindow extends BaseConsoleSettingsWindow{
+   
+   private static final String TITTLE = "Load, save & reset setting files";
+   private static final String BUTTONTITTLE = "Load/save/reset";
+   
    protected static WidgetSimplewindow settingsWindow;
    protected static WidgetSinglecolumn settingsSingleColumn;
    
@@ -21,32 +24,30 @@ public class SettingsFilesWindow {
    private static Button saveSettingsButton;
    private static Button resetSettingsButton;
    
-   protected static void createWindow(ModSettingScreen SettingsScreen) {
+   public String getTittle() {
+      return BUTTONTITTLE;
+   }
+   
+   public Widget getMainWidget() {
+      if(settingsWindow == null)
+         createWindow();
+      
+      return settingsWindow;
+   }
+   
+   protected static void createWindow() {
       
       settingsSingleColumn = new WidgetSinglecolumn();
-      settingsWindow = new WidgetSimplewindow(settingsSingleColumn,"Settings file option");
+      settingsWindow = new WidgetSimplewindow(settingsSingleColumn,TITTLE);
       
       
       loadSettingsButton = GuiApiHelper.makeButton("Load settings from file", "loadSettings", SettingsFilesWindow.class, true);
-      saveSettingsButton = GuiApiHelper.makeButton("Save settings from file", "saveSettings", SettingsFilesWindow.class, true);
+      saveSettingsButton = GuiApiHelper.makeButton("Save settings to file", "saveSettings", SettingsFilesWindow.class, true);
       resetSettingsButton = GuiApiHelper.makeButton("Reset settings & file", "resetSettings", SettingsFilesWindow.class, true);
       
       settingsSingleColumn.add(loadSettingsButton);
       settingsSingleColumn.add(saveSettingsButton);
       settingsSingleColumn.add(resetSettingsButton);
-      
-      
-      //add button from main config page to the new window
-      SettingsScreen.append(
-               GuiApiHelper.makeButton(
-                  "Load/save/reset settings",
-                  "show",
-                  GuiModScreen.class,
-                  true,
-                  new Class[] { Widget.class },
-                  settingsWindow
-                  )
-               );
    }
    
    public static void saveSettings() {

@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+
 import net.minecraft.src.GuiApiHelper;
 import net.minecraft.src.GuiModScreen;
 import net.minecraft.src.ModLoader;
@@ -20,19 +21,33 @@ import de.matthiasmann.twl.model.ColorSpaceHSL;
 import de.matthiasmann.twl.model.SimpleListModel;
 
 
-public class ColorWindow {
+public class ColorWindow extends BaseConsoleSettingsWindow{
    
+   public static final String TITTLE = "Adjust color || Select color";
+   public static final String BUTTONTITTLE = "Colors";
+   
+   protected static WidgetSimplewindow colorWindow;
    
    protected static ColorSelector colorSelector;
    protected static ArrayList<Field> ValidSelection;
    protected static ListBox<String> colorList;
    protected static WidgetClassicTwocolumn colorTwoColumns;
-   protected static WidgetSimplewindow colorWindow;
    protected static ListColorManager listColorManager;
    protected static boolean updatingColors = false;
    
+   public String getTittle() {
+      return BUTTONTITTLE;
+   }
+
+   public Widget getMainWidget() {
+      if(colorWindow == null)
+         createWindow();
+      
+      return colorWindow;
+   }
+   
    //sets up and create window content
-   protected static void createWindow(ModSettingScreen SettingsScreen) {
+   protected static void createWindow() {
       colorTwoColumns = new WidgetClassicTwocolumn();
       
       colorSelector = new ColorSelector(new ColorSpaceHSL());
@@ -46,7 +61,7 @@ public class ColorWindow {
       
       //retrive all valid field that matters about color
       ValidSelection = new ArrayList<Field>();
-      for (Field field : ConsoleSettings.consoleFields) {
+      for (Field field : ConsoleSettings.getFields()) {
          if(field.getType().equals(Integer.TYPE) && field.getName().startsWith("COLOR_")){
             ValidSelection.add(field);
          }
@@ -58,19 +73,7 @@ public class ColorWindow {
       
       //construct window
       colorTwoColumns.add(colorList);
-      colorWindow = new WidgetSimplewindow(colorTwoColumns, "Color selector");
-      
-      //add button from main config page to the new window
-      SettingsScreen.append(
-               GuiApiHelper.makeButton(
-                  "Color selector",
-                  "show",
-                  GuiModScreen.class,
-                  true,
-                  new Class[] { Widget.class },
-                  colorWindow
-                  )
-               );
+      colorWindow = new WidgetSimplewindow(colorTwoColumns, TITTLE);
       
       //add callback
       listColorManager = new ListColorManager();
@@ -102,12 +105,8 @@ class FieldSimpleListModel extends SimpleListModel<String> {
    public FieldSimpleListModel(ArrayList<Field> arrayList) {
       list = new ArrayList<String>();
       for (Field field : arrayList) {
-         String temp = field.getName().substring(6);
-         String words [] = temp.toLowerCase().split("_");
-         temp = words[0].substring(0, 1).toUpperCase() + words[0].substring(1);
-         for (int i = 1; i < words.length; i++) {
-            temp += " " + words[i];
-         }
+         String temp = field.getName().substring(6).toLowerCase().replaceAll("_", " ");
+         temp = temp.substring(0, 1).toUpperCase() + temp.substring(1);
          list.add(temp);
       }
    }

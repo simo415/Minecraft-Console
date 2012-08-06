@@ -5,12 +5,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
-
+/* TODO SPC
 import net.minecraft.src.PlayerHelper;
 import net.minecraft.src.SPCPlugin;
 import net.minecraft.src.SPCPluginManager;
+import net.minecraft.src.spc_AprilFools2012;*/
 import net.minecraft.src.mod_Console;
-import net.minecraft.src.spc_AprilFools2012;
 
 /**
  *
@@ -40,16 +40,18 @@ public class ConsoleDefaultCommands {
    {
       List<String> commands = new ArrayList();
       
+      /* TODO SPC
       if(mod_Console.SPCInstalled())
       {
          commands.addAll(getSPCcommands());
-      }
+      }*/
       
       Collections.sort(commands);
 
       return commands;
    }
    
+   /* TODO SPC
    private static ArrayList<String> getSPCcommands()
    {
       ArrayList<String> commands = new ArrayList<String>();
@@ -75,7 +77,7 @@ public class ConsoleDefaultCommands {
       commands.addAll(worldEditCommands);
       
       return commands;
-   }
+   }*/
    
    public static List<String> getDefaultMultiplayerCommands()
    {

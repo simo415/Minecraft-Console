@@ -46,7 +46,8 @@ public class ConsoleChatCommands implements ConsoleListener{
 
    private static List commands_Singleplayer;
    private static List commands_Multiplayer;
-
+   
+   
    static
    {
       ConsoleDefaultCommands.init();
@@ -135,13 +136,10 @@ public class ConsoleChatCommands implements ConsoleListener{
 
    @Override
    public boolean processInput(String input) {
-      if (input == null || input.length() == 0 || !input.startsWith("@")) {
-         return true;
-      }
 
-      return false;
+      return true;
    }
-
+   
    @Override
    public void processOutput(String output) {
       // empty
