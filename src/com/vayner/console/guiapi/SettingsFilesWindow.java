@@ -3,10 +3,11 @@ package com.vayner.console.guiapi;
 import com.sijobe.console.GuiConsole;
 
 import de.matthiasmann.twl.Button;
-import de.matthiasmann.twl.Widget;
 import net.minecraft.src.GuiApiHelper;
 import net.minecraft.src.GuiModScreen;
 import net.minecraft.src.ModSettingScreen;
+import net.minecraft.src.SettingBoolean;
+import net.minecraft.src.WidgetBoolean;
 import net.minecraft.src.WidgetClassicTwocolumn;
 import net.minecraft.src.WidgetSimplewindow;
 import net.minecraft.src.WidgetSinglecolumn;
@@ -14,7 +15,7 @@ import net.minecraft.src.WidgetSinglecolumn;
 
 public class SettingsFilesWindow extends BaseConsoleSettingsWindow{
    
-   private static final String TITTLE = "Load, save & reset setting files";
+   private static final String TITTLE = "Load, save, reset settings ...";
    private static final String BUTTONTITTLE = "Load/save/reset";
    
    protected static WidgetSimplewindow settingsWindow;
@@ -24,11 +25,13 @@ public class SettingsFilesWindow extends BaseConsoleSettingsWindow{
    private static Button saveSettingsButton;
    private static Button resetSettingsButton;
    
+   protected static final String AUTOSAVE_BACKENDNAME = "consoleAutoSave";
+   
    public String getTittle() {
       return BUTTONTITTLE;
    }
    
-   public Widget getMainWidget() {
+   public WidgetSimplewindow getMainWidget() {
       if(settingsWindow == null)
          createWindow();
       
@@ -40,7 +43,6 @@ public class SettingsFilesWindow extends BaseConsoleSettingsWindow{
       settingsSingleColumn = new WidgetSinglecolumn();
       settingsWindow = new WidgetSimplewindow(settingsSingleColumn,TITTLE);
       
-      
       loadSettingsButton = GuiApiHelper.makeButton("Load settings from file", "loadSettings", SettingsFilesWindow.class, true);
       saveSettingsButton = GuiApiHelper.makeButton("Save settings to file", "saveSettings", SettingsFilesWindow.class, true);
       resetSettingsButton = GuiApiHelper.makeButton("Reset settings & file", "resetSettings", SettingsFilesWindow.class, true);
@@ -48,6 +50,15 @@ public class SettingsFilesWindow extends BaseConsoleSettingsWindow{
       settingsSingleColumn.add(loadSettingsButton);
       settingsSingleColumn.add(saveSettingsButton);
       settingsSingleColumn.add(resetSettingsButton);
+      
+      ConsoleSettings.consoleSettings.addSetting(
+               settingsSingleColumn,
+               "Autosave",
+               AUTOSAVE_BACKENDNAME,
+               true,
+               "Autosave is on",
+               "Autosave is off"
+               );
    }
    
    public static void saveSettings() {

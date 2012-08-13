@@ -126,9 +126,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static Vector<String> MESSAGES;                           // All of the input/output
    private static Vector<ConsoleListener> LISTENERS;                 // All of the console listeners which were registered
 
-   private static volatile List IN_GAME_GUI;                         // The ingamegui message list
-   private static List IN_GAME_GUI_TEMP;                             // Used when the console is open to not display messages on INGAMEGUI
-
    private static int[] TOP;                                         // Poor implementation to keep track of drawn scrollbar top button
    private static int[] BOTTOM;                                      // Poor implementation to keep track of drawn scrollbar bottom button
    private static int[] BAR;                                         // Poor implementation to keep track of drawn scrollbar
@@ -200,9 +197,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
    private static String LOG_PATH = "mods/console/logs";             // Relative location of the console logs
-   // Mod directory
-   public static File MOD_DIR = new File(Minecraft.getMinecraftDir(), MOD_PATH);
-   private static File LOG_DIR;                                      // Log directory
+   
+   private static File MOD_DIR = new File(Minecraft.getMinecraftDir(), MOD_PATH);    // Mod directory
+   private static File LOG_DIR = new File(Minecraft.getMinecraftDir(), LOG_PATH);   // Log directory
    private static File GUI_SETTINGS_FILE = new File(MOD_DIR, "gui.properties");
    private static File GUI_SETTINGS_DEFAULT_FILE = new File(MOD_DIR, "gui-default.properties");
 
@@ -211,7 +208,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    
    private static boolean EMACS_KEYS = false;                        // Use emacs keybindings
    
-   private static boolean SCREEN_AUTOPREVIEW = true;                 // Turn on or off preview off matched words
+   private static boolean SCREEN_AUTOPREVIEW = true;                 // Turn on or off previewing matched words
    private static int SCREEN_AUTOPREVIEWAREA = 140;                  // width of preview area
    private static int KEY_AUTOCOMPLETE = Keyboard.KEY_TAB;           // Autocomlete keybinding
    private static int KEY_AUTOPREV = Keyboard.KEY_LEFT;              // Next match
@@ -231,7 +228,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
       
       writeSettings(GuiConsole.class, GUI_SETTINGS_FILE);
       
-      LOG_DIR = new File(Minecraft.getMinecraftDir(), LOG_PATH);
       ALLOWED_CHARACTERS = ChatAllowedCharacters.allowedCharacters;
       ALLOWED_COMMAND_CHARACTERS = ChatAllowedCharacters.allowedCharacters + "@";
       MESSAGES = new Vector<String>();
@@ -264,11 +260,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
          } catch (Exception e) {
          }
       }
-      IN_GAME_GUI_TEMP = new Vector<Object>();
    }
 
    /**
-    * Constructor should only be initialised from within the class
+    * Constructor should only be initialised from within the class ( currently via static{ } )
     */
    private GuiConsole() {
       mc = ModLoader.getMinecraftInstance();
@@ -302,7 +297,16 @@ public class GuiConsole extends GuiScreen implements Runnable {
       }
       return INSTANCE;
    }
-
+   
+   /**
+    * returns the current directory Minecraft console saves it files.
+    * 
+    * @return Minecraft console current mod directory
+    */
+   public static File getModDir() {
+      return MOD_DIR;
+   }
+   
    /**
     * Generates a hashmap containing all of the configured key bindings from file
     *
@@ -321,38 +325,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
       } catch (Exception e) {
       }
       return bindings;
-   }
-
-   /**
-    * Grabs the inGameGui chat list if it can be grabbed and returns true if
-    * the list is not null
-    *
-    * @return True is returned when the list is retrieved and not null
-    */
-   @Deprecated
-   private boolean getInGameGuiList() {
-      if (IN_GAME_GUI == null) {
-         if (mc == null) {
-            return false;
-         }
-         try {
-            Field fields[] = GuiIngame.class.getDeclaredFields();
-            for (Field f : fields) {
-               f.setAccessible(true);
-               Object o = f.get(mc.ingameGUI);
-               if (o instanceof List) {
-                  IN_GAME_GUI = (List<?>) o;
-                  return true;
-               }
-            }
-         } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-         }
-      } else {
-         return true;
-      }
-      return false;
    }
 
    /**
@@ -441,16 +413,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
       historyPosition = 0;
       isGuiOpen = true;
       rebuildLines = true;
-      //pullGuiList();
-      /*try {
-         if (getInGameGuiList()) {
-            for (Object message : IN_GAME_GUI) {
-               IN_GAME_GUI_TEMP.add(0, message);
-            }
-            IN_GAME_GUI.clear();
-         }
-      } catch (Exception e) {
-      }*/
    }
 
    /**
@@ -462,17 +424,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
    public void onGuiClosed() {
       Keyboard.enableRepeatEvents(false);
       isGuiOpen = false;
-
-      // Transfers the inGameGui messages back to the inGameGui object
-      /*try {
-         if (!isGuiOpen) {
-            for (Object message : IN_GAME_GUI_TEMP) {
-               IN_GAME_GUI.add(0, message);
-            }
-            IN_GAME_GUI_TEMP.clear();
-         }
-      } catch (Exception e) {
-      }*/
    }
 
    /**
@@ -483,19 +434,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
    @Override
    public void updateScreen() {
       updateCounter++;
-
-      // Transfers the inGameGui messages from the inGameGui object to here
-      /* Now obsolete
-      try {
-         pullGuiList();
-         if (isGuiOpen) {
-            for (int i = IN_GAME_GUI.size() - 1; i > -1; i--) {
-               IN_GAME_GUI_TEMP.add(IN_GAME_GUI.get(i));
-            }
-            IN_GAME_GUI.clear();
-         }
-      } catch (Exception e) {
-      }*/
    }
 
    /**
@@ -974,16 +912,29 @@ public class GuiConsole extends GuiScreen implements Runnable {
    public boolean isLocalMultiplayerServer() {
       return mc.isIntegratedServerRunning();
    }
-
+   
+   
+   public String serverName() {
+      if(isMultiplayerMode())
+         return mc.getServerData().serverName;
+      return "";
+   }
+   
+   public String serverIp() {
+      if(isMultiplayerMode())
+         return mc.getServerData().serverIP;
+      return "";
+   }
+   
+   
    /**
     * Gets all the usernames on the current server you're on
     *
     * @return A list in alphabetical order of players logged onto the server
     */
    public List<String> getPlayerNames() {
-      List<String> names;
+      List<String> names = new ArrayList<String>();
       if (isMultiplayerMode() && mc.thePlayer instanceof EntityClientPlayerMP) {
-         names = new ArrayList<String>();
          NetClientHandler netclienthandler = ((EntityClientPlayerMP) mc.thePlayer).sendQueue;
          List<GuiPlayerInfo> tempList = netclienthandler.playerInfoList;
          for (GuiPlayerInfo info : (List<GuiPlayerInfo>) tempList) {
@@ -1007,7 +958,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             }
          }
       } else {
-         names = null;
+         names.add(playername);
       }
       return names;
    }
@@ -1594,6 +1545,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * @param k colour of the render
     * @param flag if true draw with shadow, if false draw without shadow
     */
+   
    public void drawStringFlipped(FontRenderer fontrenderer, String s, int i, int j, int k, boolean flag) {
       GL11.glPushMatrix();
       GL11.glScalef(-1F, -1F, 1F);
@@ -1904,7 +1856,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    
    
    /**
-    * Handles messages sent from client 
+    * Handles messages received as client 
     * 
     * @param message - the message
     */
@@ -1914,7 +1866,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    
    
    /**
-    * Handles message received from server
+    * Handles message sent as server
     * 
     * @param handler - who sent the message
     * @param message - the message
@@ -1945,37 +1897,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
    }
 
    /**
-    * Grabs to IN GAME GUI list of messages for the console mod. This allows
-    * the mod to display what goes onto the inbuild message line without
-    * needing to change core classes.
-    */
-   // Obsolete with now proper chat text grabbing via ModLoader
-   @Deprecated
-   private void pullGuiList() {
-      try {
-         if (getInGameGuiList() && IN_GAME_GUI.size() > 0 && !((ChatLine) IN_GAME_GUI.get(0)).equals(lastOutput)) {
-            int pointer = 0;
-            while (pointer < IN_GAME_GUI.size()) {
-               if (((ChatLine) IN_GAME_GUI.get(pointer)).equals(lastOutput)) {
-                  break;
-               }
-               pointer++;
-            }
-            --pointer;
-            for (int i = pointer; i > -1; i--) {
-               addOutputMessage(((ChatLine) IN_GAME_GUI.get(i)).func_74538_a());
-            }
-            lastOutput = (ChatLine) IN_GAME_GUI.get(0);
-         }
-      } catch (Exception e) {
-      }
-   }
-
-   /**
-    * Runs a thread which automatically pulls the chat line into the console
+    * Not anymore, new default at 100ms.
+    * (Runs a thread which automatically pulls the chat line into the console
     * on a configurable interval, by default 20ms. It uses Object.equals
     * against the ChatLine object to determine the previous message which was
-    * copied across.
+    * copied across.)
     *
     * This method also clears the history and output lists once they reach
     * capacity
@@ -2003,8 +1929,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
                } catch (FileNotFoundException e) {
                }
             }
-            // Pull across GuiList output
-            //pullGuiList();
 
             // Empties message list when it hits maximum size
             while (OUTPUT_MAX != 0 && MESSAGES.size() > OUTPUT_MAX) {

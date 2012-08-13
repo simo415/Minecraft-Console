@@ -8,7 +8,6 @@ import net.minecraft.src.SettingInt;
 import net.minecraft.src.WidgetClassicTwocolumn;
 import net.minecraft.src.WidgetInt;
 import net.minecraft.src.WidgetSimplewindow;
-import de.matthiasmann.twl.Widget;
 import de.matthiasmann.twl.model.FloatModel;
 
 
@@ -25,7 +24,7 @@ public class ScreenSettingsWindow extends BaseConsoleSettingsWindow{
       return BUTTONTITTLE;
    }
    
-   public Widget getMainWidget() {
+   public WidgetSimplewindow getMainWidget() {
       if(screenSettingsWindow == null)
          createWindow();
       
@@ -34,17 +33,17 @@ public class ScreenSettingsWindow extends BaseConsoleSettingsWindow{
 
    private static void createWindow() {
       
-      int amount = 0;
+      int valideFields = 0;
       ArrayList<Field> toUse = new ArrayList<Field>();
       
       for (Field field : ConsoleSettings.getFields()) {
          if(field.getType().equals(int.class) && field.getName().startsWith("SCREEN_")) {
-            amount++;
+            valideFields++;
             toUse.add(field);
          }
       }
       
-      screenSizes = new WidgetInt [amount];
+      screenSizes = new WidgetInt [valideFields];
       
       for (int i = 0; i < toUse.size(); i++) {
          Field field = toUse.get(i);

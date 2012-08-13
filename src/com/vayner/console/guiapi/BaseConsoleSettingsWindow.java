@@ -1,6 +1,6 @@
 package com.vayner.console.guiapi;
 
-import de.matthiasmann.twl.Widget;
+import net.minecraft.src.WidgetSimplewindow;
 
 
 public class BaseConsoleSettingsWindow {
@@ -9,7 +9,7 @@ public class BaseConsoleSettingsWindow {
       return "";
    }
    
-   public Widget getMainWidget() {
+   public WidgetSimplewindow getMainWidget() {
       return null;
    }
 

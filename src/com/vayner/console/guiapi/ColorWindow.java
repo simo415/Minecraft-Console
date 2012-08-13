@@ -15,7 +15,6 @@ import de.matthiasmann.twl.CallbackWithReason;
 import de.matthiasmann.twl.Color;
 import de.matthiasmann.twl.ColorSelector;
 import de.matthiasmann.twl.ListBox;
-import de.matthiasmann.twl.Widget;
 import de.matthiasmann.twl.ListBox.CallbackReason;
 import de.matthiasmann.twl.model.ColorSpaceHSL;
 import de.matthiasmann.twl.model.SimpleListModel;
@@ -39,7 +38,7 @@ public class ColorWindow extends BaseConsoleSettingsWindow{
       return BUTTONTITTLE;
    }
 
-   public Widget getMainWidget() {
+   public WidgetSimplewindow getMainWidget() {
       if(colorWindow == null)
          createWindow();
       

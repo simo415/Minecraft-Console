@@ -38,38 +38,57 @@ import net.minecraft.src.ModLoader;
  */
 
 public class ConsoleChatCommands implements ConsoleListener{
-   private static final String singleplayerFileName = "singleplayer.txt";
-   private static final String multiplayerFileName = "multiplayer.txt";
    
-   private static final File COMMANDFILE_SINGLEPLAYER = new File(GuiConsole.MOD_DIR,singleplayerFileName);
-   private static final File COMMANDFILE_MULTIPLAYER = new File(GuiConsole.MOD_DIR,multiplayerFileName);
-
-   private static List commands_Singleplayer;
-   private static List commands_Multiplayer;
+   private static final File WORDLIST_DIR = new File(GuiConsole.getModDir(),"/wordlist");
+   private static final String DEFAULT_COMMAND_LIST = "defaults";
+   private static final String DEFAULT_FILE_ENDING = ".txt";
    
+   private static List<String> currentCommandSet = null;
+   
+   private static String lastServerName = "";
    
    static
    {
       ConsoleDefaultCommands.init();
-      loadAllCommands();
+      currentCommandSet = loadNewCommandSet();
    }
    
    public static List<String> getChatCommands()
    {
-      if(GuiConsole.getInstance().isMultiplayerMode())
-      {	//multiplayer
-         return commands_Multiplayer;
+      String currentServerName = GuiConsole.getInstance().serverName();
+      if(!currentServerName.equals(lastServerName) || currentCommandSet == null) {
+         lastServerName = currentServerName;
+         currentCommandSet = loadNewCommandSet();
       }
-      else
-      {	//singleplayer
-         return commands_Singleplayer;
-      }
+         
+      
+      return currentCommandSet;
    }
 
 
+   private static List<String> loadNewCommandSet() {
+      if(lastServerName.equals(""))
+         return loadCommands(DEFAULT_COMMAND_LIST);
+      return loadCommands(lastServerName);
+   }
+   
+   private static List<String> loadCommands(String listName) {
+      File listFile = new File(WORDLIST_DIR,listName + DEFAULT_FILE_ENDING);
+      
+      if(!listFile.exists()) {
+         saveCommandFile(ConsoleDefaultCommands.getDefaultMultiplayerCommands(), listFile);
+      }
+      
+      return loadCommandFile(listFile);
+   }
+   
+   private static void saveCommands(String listName) {
+      File listFile = new File(WORDLIST_DIR,listName + DEFAULT_FILE_ENDING);
+      
+      saveCommandFile(ConsoleDefaultCommands.getDefaultMultiplayerCommands(), listFile);
+   }
 
-   private static List<String> loadChatCommands(File commandFile)
-   {
+   private static List<String> loadCommandFile(File commandFile) {
       List<String> commandList = new ArrayList<String>(250);
 
       try {
@@ -94,8 +113,8 @@ public class ConsoleChatCommands implements ConsoleListener{
       return commandList;
    }
 
-   private static void saveChatCommands(List<String> commands,File commandFile)
-   {
+   private static void saveCommandFile(List<String> commands,File commandFile) {
+      
       try {
          BufferedWriter writer = new BufferedWriter(new FileWriter(commandFile));
 
@@ -112,31 +131,15 @@ public class ConsoleChatCommands implements ConsoleListener{
 
    }
 
-   private static void loadAllCommands()
-   {
-      if(!COMMANDFILE_SINGLEPLAYER.exists())
-      {
-         System.out.println("Generating " + singleplayerFileName);
-         saveChatCommands(ConsoleDefaultCommands.getDefaultSingleplayerCommands(),COMMANDFILE_SINGLEPLAYER);
-      }
-
-      commands_Singleplayer = loadChatCommands(COMMANDFILE_SINGLEPLAYER);
-
-      if(!COMMANDFILE_MULTIPLAYER.exists())
-      {
-         System.out.println("Generating " + multiplayerFileName);
-         saveChatCommands(ConsoleDefaultCommands.getDefaultMultiplayerCommands(),COMMANDFILE_MULTIPLAYER);
-      }
-
-      commands_Multiplayer = loadChatCommands(COMMANDFILE_MULTIPLAYER);
-
-      System.out.println(singleplayerFileName + " contains:" + commands_Singleplayer.size() + " entries");
-      System.out.println(multiplayerFileName + " contains:" + commands_Multiplayer.size() + " entries");
-   }
-
    @Override
    public boolean processInput(String input) {
-
+      if(input.equals("servername")){
+         System.out.println("Server name:" + GuiConsole.getInstance().serverName());
+         System.out.println("Server IP:" + GuiConsole.getInstance().serverIp());
+         GuiConsole.getInstance().addOutputMessage("Server name:" + GuiConsole.getInstance().serverName());
+         GuiConsole.getInstance().addOutputMessage("Server IP:" + GuiConsole.getInstance().serverIp());
+         return false;
+      }
       return true;
    }
    

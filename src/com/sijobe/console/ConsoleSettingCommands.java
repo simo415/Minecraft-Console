@@ -220,7 +220,7 @@ public class ConsoleSettingCommands implements ConsoleListener {
    }
 
    public static void save(){
-      GuiConsole.getInstance().writeSettings(GuiConsole.class, new File(GuiConsole.MOD_DIR, "gui.properties"));
+      GuiConsole.writeGuiConsoleSettings();
    }
 
    @Override

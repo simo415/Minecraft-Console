@@ -36,66 +36,50 @@ public class ConsoleDefaultCommands {
    private static ArrayList<String> worldEditCommands;
    private static ArrayList<String> commandBookCommands;
    
-   public static List<String> getDefaultSingleplayerCommands()
+   private static ArrayList<String> internalDefault;
+   private static ArrayList<String> multiplayerDefault;
+   
+   public static List<String> getDefaultInternalCommands()
    {
-      List<String> commands = new ArrayList();
+      return (List<String>) internalDefault.clone();
+   }
+   
+   public static List<String> getDefaultMultiplayerCommands()
+   {
+      return (List<String>) multiplayerDefault.clone();
+   }
+   
+   
+   private static void createDefaulLists() {
+      internalDefault = new ArrayList<String>();
+      multiplayerDefault = new ArrayList<String>();
       
+      //generate default singleplayer / internal command list
       /* TODO SPC
       if(mod_Console.SPCInstalled())
       {
          commands.addAll(getSPCcommands());
       }*/
+      internalDefault.addAll(vanillaServerCommands);
       
-      Collections.sort(commands);
-
-      return commands;
-   }
-   
-   /* TODO SPC
-   private static ArrayList<String> getSPCcommands()
-   {
-      ArrayList<String> commands = new ArrayList<String>();
+      Collections.sort(internalDefault);
       
-      Set SPC_cmd = PlayerHelper.CMDS.keySet();
-      List<SPCPlugin> SPC_pluginCmd = SPCPluginManager.getPluginManager().getPlugins();
+      //generate default multiplayer command list
+      multiplayerDefault.addAll(vanillaServerCommands);
+      multiplayerDefault.addAll(worldEditCommands);
+      multiplayerDefault.addAll(commandBookCommands);
       
-      for (Object entry : SPC_cmd) {
-         if(entry instanceof String)
-         {
-            commands.add((String)entry);
-         }
-      }
+      Collections.sort(multiplayerDefault);
       
-      for (SPCPlugin spcPlugin : SPC_pluginCmd) {
-         if(spcPlugin.getCommands() == null)
-            continue;
-         for (String string : spcPlugin.getCommands()) {
-            commands.add(string);
-         }
-      }
-      
-      commands.addAll(worldEditCommands);
-      
-      return commands;
-   }*/
-   
-   public static List<String> getDefaultMultiplayerCommands()
-   {
-      List<String> commands = new ArrayList();
-
-      commands.addAll(vanillaServerCommands);
-      commands.addAll(worldEditCommands);
-      commands.addAll(commandBookCommands);
-      
-      Collections.sort(commands);
-
-      return commands;
    }
 
    static void init()
    {
+      //create the lists
       vanillaServerCommands = new ArrayList<String>();
-
+      worldEditCommands = new ArrayList<String>();
+      commandBookCommands = new ArrayList<String>();
+      
       //non-OP commands
       vanillaServerCommands.add("/tell");
       vanillaServerCommands.add("/me");
@@ -129,10 +113,7 @@ public class ConsoleDefaultCommands {
       vanillaServerCommands.add("/whitelist reload");
       vanillaServerCommands.add("/xp");
 
-
-
-      worldEditCommands = new ArrayList<String>();
-
+      
       worldEditCommands.add("//limit");
       worldEditCommands.add("//undo");
       worldEditCommands.add("//redo");
@@ -247,14 +228,10 @@ public class ConsoleDefaultCommands {
       worldEditCommands.add("//setbiome");
       
       
-      commandBookCommands = new ArrayList<String>();
-      
       commandBookCommands.add("/item");
       commandBookCommands.add("/i");
-      //commandBookCommands.add("/give");
       commandBookCommands.add("/more");
       commandBookCommands.add("/who");
-      //commandBookCommands.add("/list");
       commandBookCommands.add("/playerlist");
       commandBookCommands.add("/online");
       commandBookCommands.add("/players");
@@ -265,7 +242,6 @@ public class ConsoleDefaultCommands {
       commandBookCommands.add("/kit");
       commandBookCommands.add("/kit");
       commandBookCommands.add("/setspawn");
-      //commandBookCommands.add("/time");
       commandBookCommands.add("/time now");
       commandBookCommands.add("/time -l now");
       commandBookCommands.add("/time");
@@ -275,7 +251,6 @@ public class ConsoleDefaultCommands {
       commandBookCommands.add("/weather sunny");
       commandBookCommands.add("/thunder on");
       commandBookCommands.add("/thunder off");
-      //commandBookCommands.add("/biome");
       commandBookCommands.add("/spawn");
       commandBookCommands.add("/teleport");
       commandBookCommands.add("/tp");
@@ -299,13 +274,10 @@ public class ConsoleDefaultCommands {
       commandBookCommands.add("/warps list");
       commandBookCommands.add("/warps show");
       commandBookCommands.add("/broadcast");
-      //commandBookCommands.add("/say");
-      //commandBookCommands.add("/me");
       commandBookCommands.add("/msg");
       commandBookCommands.add("/message");
       commandBookCommands.add("/whisper");
       commandBookCommands.add("/pm");
-      //commandBookCommands.add("/tell");
       commandBookCommands.add("/reply");
       commandBookCommands.add("/r");
       commandBookCommands.add("/mute");
@@ -325,7 +297,6 @@ public class ConsoleDefaultCommands {
       commandBookCommands.add("/thor");
       commandBookCommands.add("/freeze");
       commandBookCommands.add("/unthor");
-      //commandBookCommands.add("/gamemode");
       commandBookCommands.add("/heal");
       commandBookCommands.add("/ping");
       commandBookCommands.add("/whois");
@@ -333,8 +304,6 @@ public class ConsoleDefaultCommands {
       commandBookCommands.add("/debug clock");
       commandBookCommands.add("/cmdbook version");
       commandBookCommands.add("/cmdbook reload");
-      //commandBookCommands.add("/kick");
-      //commandBookCommands.add("/ban");
       commandBookCommands.add("/unban");
       commandBookCommands.add("/isbanned");
       commandBookCommands.add("/baninfo");
@@ -343,5 +312,48 @@ public class ConsoleDefaultCommands {
       commandBookCommands.add("/god");
       commandBookCommands.add("/ungod");
       
+      
+      createDefaulLists();
    }
+   
+   /* TODO SPC
+   private static ArrayList<String> getSPCcommands()
+   {
+      ArrayList<String> commands = new ArrayList<String>();
+      
+      Set SPC_cmd = PlayerHelper.CMDS.keySet();
+      List<SPCPlugin> SPC_pluginCmd = SPCPluginManager.getPluginManager().getPlugins();
+      
+      for (Object entry : SPC_cmd) {
+         if(entry instanceof String)
+         {
+            commands.add((String)entry);
+         }
+      }
+      
+      for (SPCPlugin spcPlugin : SPC_pluginCmd) {
+         if(spcPlugin.getCommands() == null)
+            continue;
+         for (String string : spcPlugin.getCommands()) {
+            commands.add(string);
+         }
+      }
+      
+      commands.addAll(worldEditCommands);
+      
+      return commands;
+   }*/
+
+   public static ArrayList<String> getVanillaServerCommands(){
+      return (ArrayList<String>) vanillaServerCommands.clone();
+   }
+   
+   public static ArrayList<String> getWorldEditCommands(){
+      return (ArrayList<String>) worldEditCommands.clone();
+   }
+   
+   public static ArrayList<String> getCommandBookCommands(){
+      return (ArrayList<String>) commandBookCommands.clone();
+   }
+   
 }
