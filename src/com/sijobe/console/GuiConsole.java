@@ -192,7 +192,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int COLOR_OUTPUT_BACKGROUND = 0xBB999999;          // Colour of the output background
    private static int COLOR_INPUT_BACKGROUND = 0xBB999999;           // Colour of the input background
 
-   public static final String VERSION = "1.3.4 beta";                // Version of the mod  
+   public static final String VERSION = "1.3.5 beta";                // Version of the mod  
    private static String TITLE = "Console";                          // Title of the console
 
    private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
@@ -220,6 +220,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * Initialises all of the instance variables
     */
    static {
+      if(!LOG_DIR.exists())
+         LOG_DIR.mkdirs();
+      
       if (!GUI_SETTINGS_DEFAULT_FILE.exists())
          writeSettings(GuiConsole.class, GUI_SETTINGS_DEFAULT_FILE);
       
@@ -915,8 +918,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
    
    
    public String serverName() {
-      if(isMultiplayerMode())
-         return mc.getServerData().serverName;
+      if(isMultiplayerMode()) {
+         String unclean = mc.getServerData().serverName;
+         return cleanString(unclean);
+      }
       return "";
    }
    
@@ -1998,7 +2003,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
    public static void readSettings(Class<?> base, File settings) {
       Properties p = new Properties();
       try {
-         p.load(new FileInputStream(settings));
+         File CanonicalFile = settings.getCanonicalFile();
+         p.load(new FileInputStream(CanonicalFile));
          Field[] declaredFields = base.getDeclaredFields();
          for (Field field : declaredFields) {
             if (Modifier.isStatic(field.getModifiers()) && !Modifier.isFinal(field.getModifiers())) {
@@ -2072,8 +2078,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
    public static void writeSettings(Class<?> base, File settings) {
       Properties p = new Properties();
       try {
+         File CanonicalFile = settings.getCanonicalFile();
          try {
-            p.load(new FileInputStream(settings));
+            p.load(new FileInputStream(CanonicalFile));
          } catch (Exception e) {
          }
          Field[] declaredFields = base.getDeclaredFields();
@@ -2106,7 +2113,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
                }
             }
          }
-         p.store(new FileOutputStream(settings), "");
+         p.store(new FileOutputStream(CanonicalFile), "");
       } catch (Exception e) {
          e.printStackTrace();
       }

@@ -17,6 +17,7 @@ import com.sijobe.console.ConsoleListener;
 import com.sijobe.console.GuiConsole;
 
 import net.minecraft.src.ModLoader;
+import net.minecraft.src.mod_Console;
 
 /**
  *
@@ -49,6 +50,9 @@ public class ConsoleChatCommands implements ConsoleListener{
    
    static
    {
+      if(!WORDLIST_DIR.exists())
+         WORDLIST_DIR.mkdirs();
+      
       ConsoleDefaultCommands.init();
       currentCommandSet = loadNewCommandSet();
    }
@@ -92,8 +96,10 @@ public class ConsoleChatCommands implements ConsoleListener{
       List<String> commandList = new ArrayList<String>(250);
 
       try {
+         
+         File CanonicalFile = commandFile.getCanonicalFile();
          BufferedReader reader;
-         reader = new BufferedReader(new FileReader(commandFile));
+         reader = new BufferedReader(new FileReader(CanonicalFile));
 
          String in = "";
 
@@ -103,7 +109,7 @@ public class ConsoleChatCommands implements ConsoleListener{
             commandList.add(in);
          } while (true);
       } catch (FileNotFoundException e) {
-         e.printStackTrace();
+         System.out.println(commandFile.getPath() + " can't be found");
       } catch (IOException e) {
          e.printStackTrace();
       }
@@ -116,7 +122,13 @@ public class ConsoleChatCommands implements ConsoleListener{
    private static void saveCommandFile(List<String> commands,File commandFile) {
       
       try {
-         BufferedWriter writer = new BufferedWriter(new FileWriter(commandFile));
+         
+         File CanonicalFile = commandFile.getCanonicalFile();
+         
+         if(!CanonicalFile.exists())
+            CanonicalFile.createNewFile();
+         
+         BufferedWriter writer = new BufferedWriter(new FileWriter(CanonicalFile));
 
          for (String string : commands) {
             writer.write(string);
@@ -124,7 +136,8 @@ public class ConsoleChatCommands implements ConsoleListener{
          }
 
          writer.close();
-
+         
+      } catch (FileNotFoundException e){
       } catch (IOException e) {
          e.printStackTrace();
       }
@@ -133,7 +146,7 @@ public class ConsoleChatCommands implements ConsoleListener{
 
    @Override
    public boolean processInput(String input) {
-      if(input.equals("servername")){
+      if(mod_Console.MCPtesting() && input.equals("servername")){
          System.out.println("Server name:" + GuiConsole.getInstance().serverName());
          System.out.println("Server IP:" + GuiConsole.getInstance().serverIp());
          GuiConsole.getInstance().addOutputMessage("Server name:" + GuiConsole.getInstance().serverName());

@@ -32,6 +32,7 @@ public class mod_Console extends BaseMod {
    public static KeyBinding openKey;
    private static boolean guiApiInstalled = false;
    private static boolean SPCInstalled = false;
+   private static boolean MCP = false;
    
    public mod_Console() {
       GuiConsole.getInstance();
@@ -54,17 +55,20 @@ public class mod_Console extends BaseMod {
       if(playername.equals("MCPTEST")) {
          System.out.println("Username is MCPTEST, assuming running via eclipse with all prerequisits installed");
          SPCInstalled = true;
-         guiApiInstalled = true;  
+         guiApiInstalled = true;
+         MCP = true;
          return;
       } else if (playername.equals("GUIAPI")) {
          System.out.println("Username is GUIAPI, assuming running via eclipse with ModLoader and GuiApi installed");
          SPCInstalled = false;
-         guiApiInstalled = true;  
+         guiApiInstalled = true;
+         MCP = true;
          return;
       } else if (playername.equals("MODLOADER")) {
          System.out.println("Username is MODLOADER, assuming running via eclipse with only ModLoader installed");
          SPCInstalled = false;
-         guiApiInstalled = false;  
+         guiApiInstalled = false;
+         MCP = true;
          return;
       }
       
@@ -112,6 +116,10 @@ public class mod_Console extends BaseMod {
    
    public static boolean SPCInstalled() {
       return SPCInstalled;
+   }
+   
+   public static boolean MCPtesting() {
+      return MCP;
    }
    
    public String getVersion() {
