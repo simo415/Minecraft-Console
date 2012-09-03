@@ -50,6 +50,7 @@ import com.vayner.console.guiapi.ConsoleSettings;
 /**
  * @formatter:off
  *                TODO: P1 - Only save logs for the current world
+ *                TODO: p1 - Per world / server configuration file
  *                TODO: P1 - Output filtering - allow blocking of certain text/people
  *                DONE: p2 - Text selection in the chat-history field (copy text)
  *                DONE: P2 - Spinner (tab auto complete) (more or less)
@@ -61,6 +62,8 @@ import com.vayner.console.guiapi.ConsoleSettings;
  *                TODO: p2 - Improve text highlighting to be less buggy
  *                DONE: p1 - Add external window / console
  *                TODO: p1 - Add tab completion to external console
+ *                TODO: p2 - Rewrite text highlight system
+ *                TODO: p1 - Fix message splitting incorrectly
  *
  * @author simo_415, tellefma.
  *
@@ -136,6 +139,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int[] HISTORY;                                     // Poor implementation to keep track of drawn history field
 
    private static int CHARHEIGHT = 10;                               // Character height - used to quickly determine number of lines per view
+   @Deprecated
    private static double CHARWIDTH = 6;                              // Maximum character width - used to quickly determine line length
 
    private static boolean CLOSE_ON_SUBMIT = false;                   // Closes the GUI after the input has been submit
@@ -191,8 +195,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int COLOR_EXIT_BUTTON = 0xBB999999;                // Colour of the exit button
    private static int COLOR_OUTPUT_BACKGROUND = 0xBB999999;          // Colour of the output background
    private static int COLOR_INPUT_BACKGROUND = 0xBB999999;           // Colour of the input background
+   private static int COLOR_MESSAGE_LENGTH_BACKGROUND = 0xBB797979;  // Colour of the message length background
 
-   public static final String VERSION = "1.3.5 beta";                // Version of the mod  
+   public static final String VERSION = "1.3.5.1 beta";                // Version of the mod  
    private static String TITLE = "Console";                          // Title of the console
 
    private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
@@ -208,8 +213,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
    
    private static boolean EMACS_KEYS = false;                        // Use emacs keybindings
    
+   private static boolean SCREEN_MESSAGE_LENGHT_DISPLAY = true;
    private static boolean SCREEN_AUTOPREVIEW = true;                 // Turn on or off previewing matched words
    private static int SCREEN_AUTOPREVIEWAREA = 140;                  // width of preview area
+   
    private static int KEY_AUTOCOMPLETE = Keyboard.KEY_TAB;           // Autocomlete keybinding
    private static int KEY_AUTOPREV = Keyboard.KEY_LEFT;              // Next match
    private static int KEY_AUTONEXT = Keyboard.KEY_RIGHT;             // Previous match
@@ -348,7 +355,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
     *
     * @param message - The line message to add
     */
-   public void addLine(String message) {
+   private void addLine(String message) {
       if (LINES == null) {
          buildLines();
       }
@@ -357,7 +364,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
          return;
       }
       
-      int chars = (int) ((currentChatWidth) / CHARWIDTH);
+      //using minecraft's methods instead, seems to work fine for the moment
+      LINES.addAll(mc.fontRenderer.listFormattedStringToWidth(message, currentChatWidth));
+      
+      /*int chars = (int) ((currentChatWidth) / CHARWIDTH);
       String parts[] = message.split("(?<=\\G.{0," + (chars) + "}? )");
       String temp = "";
       int linesAdded = 0;
@@ -1281,14 +1291,43 @@ public class GuiConsole extends GuiScreen implements Runnable {
       int maxx = width - SCREEN_PADDING_RIGHT;
       int maxy = height - SCREEN_PADDING_BOTTOM;
       drawRect(minx, miny, maxx, maxy, COLOR_BASE);
-
+      
       // Input Text box
       int textbox_minx = minx + SCREEN_BORDERSIZE;
       int textbox_maxx = maxx - SCREEN_BORDERSIZE;
       int textbox_miny = maxy - CHARHEIGHT - SCREEN_BORDERSIZE;
       int textbox_maxy = maxy - SCREEN_BORDERSIZE;
-      drawRect(textbox_minx, textbox_miny, textbox_maxx, textbox_maxy, COLOR_INPUT_BACKGROUND);
-      TEXT_BOX = new int[] { textbox_minx, textbox_miny, textbox_maxx, textbox_maxy };
+      
+      if(SCREEN_MESSAGE_LENGHT_DISPLAY) {
+         
+         String currentChars = String.valueOf(message.length());
+         String maxLenght = String.valueOf(INPUT_SERVER_MAX);
+         int charDiff = maxLenght.length() - currentChars.length();
+         for (int i = 0; i < charDiff; i++) {
+            currentChars = "0" + currentChars;
+         }
+         
+         String messageLenght = currentChars + "/" + maxLenght;
+         
+         int indent = mc.fontRenderer.getStringWidth(messageLenght) + SCREEN_BORDERSIZE*2;
+         
+         int messageLenghtBox_maxx = textbox_maxx;
+         int messageLenghtBox_minx = textbox_maxx - indent + SCREEN_BORDERSIZE;
+         
+         
+         drawRect(messageLenghtBox_minx, textbox_miny, messageLenghtBox_maxx, textbox_maxy, COLOR_MESSAGE_LENGTH_BACKGROUND);
+         
+         drawRect(textbox_minx, textbox_miny, textbox_maxx - indent, textbox_maxy, COLOR_INPUT_BACKGROUND);
+         TEXT_BOX = new int[] { textbox_minx, textbox_miny, textbox_maxx - indent, textbox_maxy };
+         drawString(fontRenderer, messageLenght, messageLenghtBox_minx + 1, textbox_miny + 1, COLOR_INPUT_TEXT);
+         
+      } else {
+         drawRect(textbox_minx, textbox_miny, textbox_maxx, textbox_maxy, COLOR_INPUT_BACKGROUND);
+         TEXT_BOX = new int[] { textbox_minx, textbox_miny, textbox_maxx, textbox_maxy };
+      }
+      
+      
+      
 
       // Input text highlighting
       if (initialHighlighting[0] == -1 && lastHighlighting[0] == -1 && lastHighlighting[1] != initialHighlighting[1]) {
@@ -1769,8 +1808,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
          if (lineAt < 0) {
             lineAt = 0;
          }
+         else if (lineAt >= LINES.size()) {
+            lineAt = LINES.size() - 1;
+         }
       }
-
+      
       return lineAt;
    }
 
