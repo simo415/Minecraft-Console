@@ -63,7 +63,7 @@ import com.vayner.console.guiapi.ConsoleSettings;
  *                DONE: p1 - Add external window / console
  *                TODO: p1 - Add tab completion to external console
  *                TODO: p2 - Rewrite text highlight system
- *                TODO: p1 - Fix message splitting incorrectly
+ *                DONE: p1 - Fix message splitting incorrectly
  *
  * @author simo_415, tellefma.
  *
