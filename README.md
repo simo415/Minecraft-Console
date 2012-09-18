@@ -1,8 +1,8 @@
 Minecraft Console Mod
 =====================
 
-### [Latest Version](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_latest.zip) (most likely to be stable)
-### [Latest Build/Snapshot](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_Snapshot.zip) (can be unstable)
+### [Latest Version](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_latest.zip) (most likely to be stable, may not be up to date)
+### [Latest Build/Snapshot](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_Snapshot.zip) (can be a little unstable, almost always up to date)
 
 Also found on the [Minecraft Forums](http://www.minecraftforum.net/topic/680231-100-minecraft-console-v11-updated/)
 
