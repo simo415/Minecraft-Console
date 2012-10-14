@@ -27,7 +27,8 @@ public class ConsoleSettings {
    private static final BaseConsoleSettingsWindow [] subWindows = {
       new ColorWindow(),
       new ScreenSettingsWindow(),
-      new SettingsFilesWindow()
+      new SettingsFilesWindow(),
+      new MiscSettingsWindow()
       };
    
    private static boolean init = false;
@@ -49,6 +50,8 @@ public class ConsoleSettings {
       
       //initialize every section/sub window, each in their own class (because i can)
       for (BaseConsoleSettingsWindow widgetRef : subWindows) {
+         if(widgetRef.getMainWidget() == null)
+            continue;
          consoleSettingsScreen.append(
                   GuiApiHelper.makeButton(
                      widgetRef.getTittle(),

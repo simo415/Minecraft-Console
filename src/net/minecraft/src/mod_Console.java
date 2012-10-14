@@ -42,10 +42,7 @@ public class mod_Console extends BaseMod {
    
    @Override
    public void keyboardEvent(KeyBinding event) {
-      Minecraft game = ModLoader.getMinecraftInstance();
-      if (game.currentScreen == null) {
-         game.displayGuiScreen(GuiConsole.getInstance());
-      }
+      openConsole();
    }
    
    @Override
@@ -103,6 +100,17 @@ public class mod_Console extends BaseMod {
    @Override
    public void serverChat(NetServerHandler var1, String var2) {
       GuiConsole.getInstance().addServerMessage(var1, var2);
+   }
+   
+   public static void openConsole() {
+      ModLoader.getMinecraftInstance().displayGuiScreen(GuiConsole.getInstance());
+   }
+   
+   public static void closeConsole() {
+      Minecraft game = ModLoader.getMinecraftInstance();
+      if(game.currentScreen.equals(GuiConsole.getInstance())){
+         game.displayGuiScreen(null);
+      }
    }
    
    public void modsLoaded() {

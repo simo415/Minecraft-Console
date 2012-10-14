@@ -59,7 +59,7 @@ public class ConsoleChatCommands implements ConsoleListener{
    
    public static List<String> getChatCommands()
    {
-      String currentServerName = GuiConsole.getInstance().serverName();
+      String currentServerName = GuiConsole.getInstance().getServerName();
       if(!currentServerName.equals(lastServerName) || currentCommandSet == null) {
          lastServerName = currentServerName;
          currentCommandSet = loadNewCommandSet();
@@ -108,10 +108,12 @@ public class ConsoleChatCommands implements ConsoleListener{
             if(in == null || in.equals(""))break;
             commandList.add(in);
          } while (true);
+         
+         reader.close();
       } catch (FileNotFoundException e) {
-         System.out.println(commandFile.getPath() + " can't be found");
+         System.out.println("Console - " + commandFile.getPath() + " can't be found");
       } catch (IOException e) {
-         e.printStackTrace();
+         ModLoader.throwException("Console - IOException when reading / opening file", e);
       }
 
       Collections.sort(commandList);
@@ -139,7 +141,7 @@ public class ConsoleChatCommands implements ConsoleListener{
          
       } catch (FileNotFoundException e){
       } catch (IOException e) {
-         e.printStackTrace();
+         ModLoader.throwException("Console - IOException when saving file", e);
       }
 
    }
@@ -147,10 +149,10 @@ public class ConsoleChatCommands implements ConsoleListener{
    @Override
    public boolean processInput(String input) {
       if(mod_Console.MCPtesting() && input.equals("servername")){
-         System.out.println("Server name:" + GuiConsole.getInstance().serverName());
-         System.out.println("Server IP:" + GuiConsole.getInstance().serverIp());
-         GuiConsole.getInstance().addOutputMessage("Server name:" + GuiConsole.getInstance().serverName());
-         GuiConsole.getInstance().addOutputMessage("Server IP:" + GuiConsole.getInstance().serverIp());
+         System.out.println("Server name:" + GuiConsole.getInstance().getServerName());
+         System.out.println("Server IP:" + GuiConsole.getInstance().getServerIp());
+         GuiConsole.getInstance().addOutputMessage("Server name:" + GuiConsole.getInstance().getServerName());
+         GuiConsole.getInstance().addOutputMessage("Server IP:" + GuiConsole.getInstance().getServerIp());
          return false;
       }
       return true;
