@@ -91,7 +91,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private int cursor;                                               // Position of the cursor
    private int inputOffset;                                          // Position in the message string where the input goes
    private int sliderHeight;                                         // Height of the scroll bar
-   private int currentChatWidth;                                     // Current chat space width
+   private int currentChatWidth = 128;                               // Current chat space width
    private boolean isHighlighting;                                   // Keeps track of the highlight mouse click
    private int[] firstHighlighting = new int[2];                     // Position of the mouse (at character) initially for highlighting
    private int[] lastHighlighting = new int[2];                      // Position of the mouse (at character) at end of highlighting
@@ -100,7 +100,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private int initialSliding;                                       // Position of mouse initially for slider
    private int historyPosition;                                      // Position of where in the history you are at
    private boolean isGuiOpen;                                        // When the console is open this is true
-   private ChatLine lastOutput;                                      // The last message to go into the Minecraft chatline
    private boolean rebuildLines;                                     // Keeps track of whether the lines list needs to be rebuilt
    private volatile Vector<String> log;                              // The log messages
    private SimpleDateFormat sdf;                                     // The date format for logs
@@ -108,7 +107,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private int tabListPos;                                           // Where you have tabbed to through word list
    private int tabMaxPos;                                            // Max size of the list
    private boolean tabbing = false;                                  // Is tabbing
-   private boolean tabMatchPlayerNamesOnly = false;                      // Is matching for player names
+   private boolean tabMatchPlayerNamesOnly = false;                  // Is matching for player names
    private int tabWordPos;                                           // start place of tabWord
    private String tabMatchingWord;                                   // The current word checking to
    private String tabMatchedWord;                                    // The current word matched to
@@ -353,6 +352,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
     * @param message - The line message to add
     */
    private void addLine(String message) {
+      
       if (LINES == null) {
          buildLines();
       }
@@ -364,43 +364,6 @@ public class GuiConsole extends GuiScreen implements Runnable {
       //using minecraft's methods instead, seems to work fine for the moment
       LINES.addAll(mc.fontRenderer.listFormattedStringToWidth(message, currentChatWidth));
       
-      /*int chars = (int) ((currentChatWidth) / CHARWIDTH);
-      String parts[] = message.split("(?<=\\G.{0," + (chars) + "}? )");
-      String temp = "";
-      int linesAdded = 0;
-      for (int i = 0; i < parts.length; i++) {
-         if (parts[i].length() > chars) {
-            String parts2[] = parts[i].split("(?<=\\G.{" + temp.length() + "," + (chars) + "}+)");
-            LINES.add(temp + parts2[0]);
-            linesAdded++;
-            for (int j = 1; j < parts2.length; j++) {
-               if (parts2[j].length() < chars) {
-                  temp = parts2[j];
-               } else {
-                  LINES.add(parts2[j]);
-                  linesAdded++;
-               }
-            }
-         } else {
-            if (temp.length() + parts[i].length() <= chars) {
-               temp += parts[i];
-            } else {
-               LINES.add(temp);
-               linesAdded++;
-               temp = parts[i];
-            }
-         }
-
-         if (i + 1 >= parts.length) {
-            LINES.add(temp);
-            linesAdded++;
-         }
-      }
-
-      /* if(initialHighlighting[0] > -1 && lastHighlighting[0] > -1){
-          initialHighlighting[0] -= linesAdded;
-          lastHighlighting[0] -= linesAdded;
-       }*/
    }
 
    /**
@@ -1521,7 +1484,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       drawString(this.mc.fontRenderer, input, textbox_minx + SCREEN_BORDERSIZE, textbox_miny + 1, COLOR_INPUT_TEXT);
       
       //autocomplete wordmatch visual
-      int linesToShow = (int)Math.floor(SCREEN_PADDING_BOTTOM / CHARHEIGHT) - 1;
+      int linesToShow = (int) Math.floor(SCREEN_PADDING_BOTTOM / CHARHEIGHT) - 1;
       
       if(tabbing && SCREEN_AUTOPREVIEW && linesToShow > 0)
       {

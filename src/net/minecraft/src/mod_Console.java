@@ -42,7 +42,8 @@ public class mod_Console extends BaseMod {
    
    @Override
    public void keyboardEvent(KeyBinding event) {
-      openConsole();
+      if(event.keyCode == openKey.keyCode)
+         openConsole();
    }
    
    @Override
@@ -103,12 +104,15 @@ public class mod_Console extends BaseMod {
    }
    
    public static void openConsole() {
-      ModLoader.getMinecraftInstance().displayGuiScreen(GuiConsole.getInstance());
+      Minecraft game = ModLoader.getMinecraftInstance();
+      if(game.currentScreen == null) {
+         game.displayGuiScreen(GuiConsole.getInstance());
+      }
    }
    
    public static void closeConsole() {
       Minecraft game = ModLoader.getMinecraftInstance();
-      if(game.currentScreen.equals(GuiConsole.getInstance())){
+      if(game.currentScreen.equals(GuiConsole.getInstance())) {
          game.displayGuiScreen(null);
       }
    }
