@@ -18,19 +18,29 @@ Features
  - No text overflow
  - Keeps history of whole Minecraft session, not just per world
  - Key bindings
- - Username tab completion (in servers)
+ - Word completion with server spesific list, including player names
+    - @<username> also works, ex @ar will match to any playername that starts with "ar" like @arbiter
+    - WorldEdit commands for world completion is supported.
+    - Most normal commands is also supported.
+    - Custom words as well.
 
 [![screenshot](http://i.imgur.com/rFDH3.png)](http://www.youtube.com/watch?v=UfY-AnGmJ3w)
 
-*Click the image above for the youtube video*
+*Click the image above for the youtube video* (a bit old)
 
 Install
 -------
-
+ 
  1. Install [modloader](http://www.minecraftforum.net/topic/75440-v11-risugamis-mods-everything-updated/)
  2. Install [Minecraft Console](http://dl.dropbox.com/u/7974944/Minecraft%20Console/Minecraft_Console_latest.zip)
- 3. (optional) Install [Single Player Commands](http://www.minecraftforum.net/topic/94310-125-single-player-commands-v322-official-download/)
- 
+ 3. (optional) Install [GuiAPI](http://www.minecraftforum.net/topic/612536-132-guiapi-an-advanced-gui-toolkit/)
+ 4. (optional) Install [Single Player Commands](http://www.minecraftforum.net/topic/94310-125-single-player-commands-v322-official-download/)
+
+Notes:
+ - Should be compatible with FML (Forge ModLoader)
+ - (not yet for 1.4.2) GuiAPI is used for the options menu, the mod should work without it tho.
+ - (not yet for 1.4.2) Single Player Commands is supported.
+
 Both mods can be installed with the instructions found in the modloader thread.
 However, best practise for version 1.2 an up is to put the Minecraft_Console.zip in the .minecraft/mods/ folder
 
