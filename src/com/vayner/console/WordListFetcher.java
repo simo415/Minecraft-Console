@@ -55,7 +55,7 @@ public class WordListFetcher {
             name = matcher.replaceAll("");
             String cleanName = "";
             for (int i = 0; i < name.length(); i++) { //Get rid of every invalid character for minecraft usernames
-               if (name.charAt(i) == '§') { //Gets rid of color codes
+               if (name.charAt(i) == '\u00a7') { //Gets rid of color codes
                   i++;
                   continue;
                }

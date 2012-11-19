@@ -2,7 +2,7 @@ package net.minecraft.src;
 
 /**
  * 
- * @author simo_415
+ * @author simo_415, Vayner
  * 
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU Lesser General Public License as published by
@@ -51,19 +51,19 @@ public class mod_Console extends BaseMod {
       String playername = ModLoader.getMinecraftInstance().session.username;
       GuiConsole.getInstance();
       if(playername.equals("MCPTEST")) {
-         System.out.println("Username is MCPTEST, assuming running via eclipse with all prerequisits installed");
+         System.out.println("[MCC] Username is MCPTEST, assuming running via eclipse with all prerequisits installed");
          SPCInstalled = true;
          guiApiInstalled = true;
          MCP = true;
          return;
       } else if (playername.equals("GUIAPI")) {
-         System.out.println("Username is GUIAPI, assuming running via eclipse with ModLoader and GuiApi installed");
+         System.out.println("[MCC] Username is GUIAPI, assuming running via eclipse with ModLoader and GuiApi installed");
          SPCInstalled = false;
          guiApiInstalled = true;
          MCP = true;
          return;
       } else if (playername.equals("MODLOADER")) {
-         System.out.println("Username is MODLOADER, assuming running via eclipse with only ModLoader installed");
+         System.out.println("[MCC] Username is MODLOADER, assuming running via eclipse with only ModLoader installed");
          SPCInstalled = false;
          guiApiInstalled = false;
          MCP = true;
@@ -74,7 +74,7 @@ public class mod_Console extends BaseMod {
          Class helper = Class.forName("PlayerHelper");
          SPCInstalled = true;
       } catch (ClassNotFoundException e) {
-         System.out.println("Single Player Commands 'PlayerHelper.class' not found, unable to retrive commands for SPC");
+         System.out.println("[MCC] Single Player Commands 'PlayerHelper.class' not found, unable to retrive commands for SPC");
          SPCInstalled = false;
       }
       
@@ -82,7 +82,7 @@ public class mod_Console extends BaseMod {
          Class test = Class.forName("ModSettings");
          guiApiInstalled = true;
       } catch (ClassNotFoundException e) {
-         System.out.println("GuiApi not installed, settings adjustment ingame will not be avaiable");
+         System.out.println("[MCC] GuiApi not installed, settings adjustment ingame will not be avaiable");
          guiApiInstalled = false;
       }
    }

@@ -1,5 +1,4 @@
 package com.vayner.console.guiapi;
-
 import com.sijobe.console.GuiConsole;
 
 import de.matthiasmann.twl.Button;

@@ -1,8 +1,8 @@
 package com.vayner.console.guiapi;
-
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 
 import com.sijobe.console.GuiConsole;
@@ -13,6 +13,7 @@ import net.minecraft.src.GuiApiHelper;
 import net.minecraft.src.GuiModScreen;
 import net.minecraft.src.ModSettingScreen;
 import net.minecraft.src.ModSettings;
+import net.minecraft.src.WidgetInt;
 import net.minecraft.src.WidgetSimplewindow;
 
 public class ConsoleSettings {
@@ -25,10 +26,10 @@ public class ConsoleSettings {
    
    //easier than using an Enum
    private static final BaseConsoleSettingsWindow [] subWindows = {
-      new ColorWindow(),
-      new ScreenSettingsWindow(),
-      new SettingsFilesWindow(),
-      new MiscSettingsWindow()
+       new ColorWindow()
+      ,new ScreenSettingsWindow()
+      ,new SettingsFilesWindow()
+      //,new MiscSettingsWindow()
       };
    
    private static boolean init = false;
@@ -82,6 +83,7 @@ public class ConsoleSettings {
          init();
       return consoleSettingsScreen.theWidget;
    }
+   
 }
 
 //class which only purpose is to save changes

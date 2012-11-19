@@ -1,5 +1,4 @@
 package com.vayner.console.guiapi;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -20,7 +19,7 @@ import de.matthiasmann.twl.model.ColorSpaceHSL;
 import de.matthiasmann.twl.model.SimpleListModel;
 
 
-public class ColorWindow extends BaseConsoleSettingsWindow{
+public class ColorWindow extends BaseConsoleSettingsWindow {
    
    public static final String TITTLE = "Adjust color || Select color";
    public static final String BUTTONTITTLE = "Colors";
@@ -28,7 +27,7 @@ public class ColorWindow extends BaseConsoleSettingsWindow{
    protected static WidgetSimplewindow colorWindow;
    
    protected static ColorSelector colorSelector;
-   protected static ArrayList<Field> ValidSelection;
+   protected static ArrayList<Field> validSelection;
    protected static ListBox<String> colorList;
    protected static WidgetClassicTwocolumn colorTwoColumns;
    protected static ListColorManager listColorManager;
@@ -59,15 +58,15 @@ public class ColorWindow extends BaseConsoleSettingsWindow{
       colorTwoColumns.heightOverrideExceptions.put(colorSelector, 0);
       
       //retrive all valid field that matters about color
-      ValidSelection = new ArrayList<Field>();
+      validSelection = new ArrayList<Field>();
       for (Field field : ConsoleSettings.getFields()) {
          if(field.getType().equals(Integer.TYPE) && field.getName().startsWith("COLOR_")){
-            ValidSelection.add(field);
+            validSelection.add(field);
          }
       }
       
       //adds all valid fields to a list for easy selection
-      colorList = new ListBox<String>(new FieldSimpleListModel(ValidSelection));
+      colorList = new ListBox<String>(new FieldSimpleListModel(validSelection));
       colorList.setSelected(0);
       
       //construct window
@@ -86,7 +85,7 @@ public class ColorWindow extends BaseConsoleSettingsWindow{
    {
       updatingColors = true;
       try {
-         colorSelector.setColor(new Color(ValidSelection.get(ListColorManager.selection).getInt(null)));
+         colorSelector.setColor(new Color(validSelection.get(ListColorManager.selection).getInt(null)));
       } catch (IllegalArgumentException e) {
          ModLoader.throwException("Exception in ColorWindow, field don't exist", e);
       } catch (IllegalAccessException e) {
@@ -141,7 +140,7 @@ class ListColorManager implements CallbackWithReason<ListBox.CallbackReason> {
       if(!color.equals(newColor) && !ColorWindow.updatingColors){
          color = newColor;
          try {
-            ColorWindow.ValidSelection.get(selection).setInt(null, color.toARGB());
+            ColorWindow.validSelection.get(selection).setInt(null, color.toARGB());
          } catch (IllegalArgumentException e) {
             e.printStackTrace();
          } catch (IllegalAccessException e) {

@@ -1,5 +1,4 @@
 package com.vayner.console.guiapi;
-
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -37,7 +36,7 @@ public class ScreenSettingsWindow extends BaseConsoleSettingsWindow{
       ArrayList<Field> toUse = new ArrayList<Field>();
       
       for (Field field : ConsoleSettings.getFields()) {
-         if(field.getType().equals(int.class) && field.getName().startsWith("SCREEN_")) {
+         if(field.getType().equals(Integer.TYPE) && field.getName().startsWith("SCREEN_")) {
             valideFields++;
             toUse.add(field);
          }

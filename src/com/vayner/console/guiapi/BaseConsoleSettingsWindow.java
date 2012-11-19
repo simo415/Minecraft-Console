@@ -1,5 +1,4 @@
 package com.vayner.console.guiapi;
-
 import net.minecraft.src.WidgetSimplewindow;
 
 

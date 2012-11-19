@@ -39,11 +39,12 @@ public class ExternalGuiConsole implements ConsoleListener{
       }
       
       if(input.equals("@external open")) {
-         System.out.println("starting external window");
+         System.out.println("[MCC] starting external window");
          openExternalWindow();
       }
+      
       else if(input.equals("@external close")) {
-         System.out.println("stop external window");
+         System.out.println("[MCC] stop external window");
          
       }
       
@@ -59,7 +60,7 @@ public class ExternalGuiConsole implements ConsoleListener{
       if(window == null)
          return;
       
-      String message = dirtyMessage.replaceAll("§\\w", "");
+      String message = dirtyMessage.replaceAll("\u00a7\\w", "");
       window.reciveMessage(message);
    }
    

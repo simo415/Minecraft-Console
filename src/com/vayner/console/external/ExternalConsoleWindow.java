@@ -13,6 +13,8 @@ import javax.swing.JTextPane;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Document;
 
+import net.minecraft.src.ModLoader;
+
 import org.lwjgl.input.Keyboard;
 
 import com.sijobe.console.GuiConsole;
@@ -102,13 +104,13 @@ public class ExternalConsoleWindow extends JFrame {
    public void reciveMessage(String message) {
       Document doc = textArea.getDocument();
       try {
-         if(message.startsWith("§"))
+         if(message.startsWith("\u00a7"))
             doc.insertString(doc.getLength(), message.substring(2) + "\n", null);
          else
             doc.insertString(doc.getLength(), message + "\n", null);
       } catch (BadLocationException e) {
-         System.out.println("Something has gone horrobly wrong with the external console, more spesificly 'reciveMessage'");
-         e.printStackTrace();
+         System.out.println("[MCC] Something has gone horrobly wrong with the external console, more spesificly 'reciveMessage'");
+         ModLoader.throwException("Something has gone horrobly wrong with the external console, more spesificly 'reciveMessage'", e);
       }
       
       scrollPane.getVerticalScrollBar().setValue(scrollPane.getVerticalScrollBar().getMaximum());

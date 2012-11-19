@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.text.SimpleDateFormat;
@@ -30,7 +31,7 @@ import net.minecraft.src.ChatLine;
 import net.minecraft.src.EntityClientPlayerMP;
 import net.minecraft.src.FontRenderer;
 import net.minecraft.src.GuiIngame;
-import net.minecraft.src.GuiModScreen;
+
 import net.minecraft.src.GuiPlayerInfo;
 import net.minecraft.src.GuiScreen;
 import net.minecraft.src.KeyBinding;
@@ -45,6 +46,8 @@ import org.lwjgl.opengl.GL11;
 
 import com.vayner.console.ConsoleChatCommands;
 import com.vayner.console.external.ExternalGuiConsole;
+
+import net.minecraft.src.GuiModScreen;
 import com.vayner.console.guiapi.ConsoleSettings;
 
 /**
@@ -64,6 +67,7 @@ import com.vayner.console.guiapi.ConsoleSettings;
  *                TODO: p1 - Add tab completion to external console
  *                TODO: p2 - Rewrite / improve text highlight system
  *                DONE: p1 - Fix message splitting incorrectly
+ *                FIXME:p2 - Add option for 1 tick unpause - pause for singleplayer.
  *
  * @author simo_415, tellefma.
  *
@@ -104,6 +108,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private volatile Vector<String> log;                              // The log messages
    private SimpleDateFormat sdf;                                     // The date format for logs
 
+   private boolean pauseGame = true;
+   private int pauseCountDown = 0;
+   
    private int tabListPos;                                           // Where you have tabbed to through word list
    private int tabMaxPos;                                            // Max size of the list
    private boolean tabbing = false;                                  // Is tabbing
@@ -111,8 +118,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private int tabWordPos;                                           // start place of tabWord
    private String tabMatchingWord;                                   // The current word checking to
    private String tabMatchedWord;                                    // The current word matched to
-   private String tabBeforeCursor;
-   private String tabAfterCursor;
+   private String tabBeforeCursor;                                   // The string before the cursor when completing
+   private String tabAfterCursor;                                    // The string after the cursor when completing
    private ArrayList<String> tabCurrentList;                         // The current List matching words
    
    private volatile HashMap<String,String> keyBindings;              // All the current key bindings
@@ -121,7 +128,8 @@ public class GuiConsole extends GuiScreen implements Runnable {
 
    private String logName;                                           // The name of the log file to write
    private long lastWrite;                                           // The time of the last log write
-
+   
+   private static final int CHARHEIGHT = 10;                               // Character height - used to quickly determine number of lines per view
    private static final String ALLOWED_CHARACTERS;                   // A list of permitted characters
 
    public static Vector<String> INPUT_HISTORY;                       // All the input which went into the console
@@ -137,42 +145,40 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int[] EXTERNAL_BUTTON;                             // Poor implementation to keep track of drawn external console button
    private static int[] TEXT_BOX;                                    // Poor implementation to keep track of drawn text box
    private static int[] HISTORY;                                     // Poor implementation to keep track of drawn history field
-
-   private static int CHARHEIGHT = 10;                               // Character height - used to quickly determine number of lines per view
-   @Deprecated
-   private static double CHARWIDTH = 6;                              // Maximum character width - used to quickly determine line length
-
-
-   private static boolean CHAT_PRINT_INPUT = true;                   // Prints the input
-   private static boolean CHAT_PRINT_OUTPUT = true;                  // Prints the output
+   
+   
    private static int CHAT_INPUT_LENGTH_MAX = 150;                   // Maximum input size on the console
    private static int CHAT_INPUT_LENGTH_SERVER_MAX = 100;            // Maximum server message size - splits the input to this length if it is longer
    private static int CHAT_INPUT_HISTORY_MAX = 50;                   // Maximum size of stored input history
+   private static int CHAT_OUTPUT_MAX = 200;                              // Maximum number of lines in the output
+   
+   private static boolean CHAT_UNPASUE_PAUSE_WITH_MESSAGE = true;   // TODO
+   private static boolean CHAT_PRINT_INPUT = true;                   // Prints the input
+   private static boolean CHAT_PRINT_OUTPUT = true;                  // Prints the output
    private static String CHAT_INPUT_PREFIX = "> ";                   // Prefix for all input messages
    
    private static boolean CLOSE_ON_SUBMIT = false;                   // Closes the GUI after the input has been submit
    private static boolean SCROLL_TO_BOTTOM_ON_SUBMIT = true;         // Moves the scroll bar to the bottom when input is sumbitted
    private static boolean CLOSE_WITH_OPEN_KEY = true;                // Closes the GUI if the open key pressed again
 
-   public static final byte LOGGING_TRACE = 8;                        // Logging level - Trace
-   public static final byte LOGGING_DEBUG = 4;                        // Logging level - Debug
-   public static final byte LOGGING_INPUT = 2;                        // Logging level - Input
-   public static final byte LOGGING_OUTPUT = 1;                       // Logging level - Output
+   public static final byte LOGGING_TRACE  = 8;                      // Logging level - Trace
+   public static final byte LOGGING_DEBUG  = 4;                      // Logging level - Debug
+   public static final byte LOGGING_INPUT  = 2;                      // Logging level - Input
+   public static final byte LOGGING_OUTPUT = 1;                      // Logging level - Output
    private static int LOGGING = LOGGING_INPUT + LOGGING_OUTPUT;      // What is currently being logged
    private static long LOG_WRITE_INTERVAL = 1000L;                   // How often (in ms) the logs are written to file
+   
    // The log line separator
-   private static String LINE_BREAK = System.getProperty("line.separator");
+   private static final String LINE_BREAK = System.getProperty("line.separator");
    private static final Pattern VALID_MESSAGE = Pattern.compile("\\S");
    
    private static String DATE_FORMAT_LOG = "yyyy-MM-dd hh:mm:ss: ";  // The date format according to SimpleDateFormat
    // The date format filename (uses SimpleDateFormat)
    private static String DATE_FORMAT_FILENAME = "yyyyMMdd_hhmmss'.log'";
 
-   private static int OUTPUT_MAX = 200;                              // Maximum number of lines in the output
-
    private static long POLL_DELAY = 20L;                             // The amount of time (in ms) to run the thread at
 
-   private static int CHAT_LINES_PER_SCROLL = 1;                          // The number of lines to scroll in one scroll wheel click
+   private static int SCREEN_LINES_PER_SCROLL = 1;                          // The number of lines to scroll in one scroll wheel click
 
    private static int SCREEN_BORDERSIZE = 2;                         // Size of the border
    private static int SCREEN_PADDING_LEFT = 5;                       // Size of the screen padding - left
@@ -197,8 +203,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
    private static int COLOR_OUTPUT_BACKGROUND = 0xBB999999;          // Colour of the output background
    private static int COLOR_INPUT_BACKGROUND = 0xBB999999;           // Colour of the input background
    private static int COLOR_MESSAGE_LENGTH_BACKGROUND = 0xBB797979;  // Colour of the message length background
-
-   public static final String VERSION = "1.3.5.1 beta";                // Version of the mod  
+   
+   private static boolean MISC_PASUE_GAME = true;                    // Game is pasued or not when the ocnsole is open
+   
+   public static final String VERSION = "1.3.6.2";                   // Version of the mod  
    private static String TITLE = "Console";                          // Title of the console
 
    private static final String MOD_PATH = "mods/console/";           // Relative location of the mod directory
@@ -237,7 +245,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       
       ALLOWED_CHARACTERS = ChatAllowedCharacters.allowedCharacters;
       MESSAGES = new Vector<String>();
-      MESSAGES.add("\2476Minecraft Console version: \2473" + VERSION + "\2476 for Minecraft version: \24731.3.1");
+      MESSAGES.add("\2476[MCC] Minecraft Console version: \2473" + VERSION + "\2476 for Minecraft version: \24731.4.4");
       MESSAGES.add("\2476Developers: \2472simo_415 \2476, \2474fsmv \2476and \2471tellefma");
       MESSAGES.add("");
       INPUT_HISTORY = new Vector<String>();
@@ -280,16 +288,17 @@ public class GuiConsole extends GuiScreen implements Runnable {
       sdf = new SimpleDateFormat(DATE_FORMAT_LOG);
       keyBindings = generateKeyBindings();
       keyDown = new Vector<Integer>();
-      addConsoleListener(new ConsoleSettingCommands());
-      addConsoleListener(new ConsoleChatCommands());
-      addConsoleListener(new ExternalGuiConsole());
+      
+      loadCoreCommands();
    }
 
    /**
     * Loads the core set of classes which handle player input/output.
     */
    private void loadCoreCommands() {
-      ;//currently unused
+      addConsoleListener(new ConsoleSettingCommands());
+      addConsoleListener(new ConsoleChatCommands());
+      addConsoleListener(new ExternalGuiConsole());
    }
 
    /**
@@ -328,7 +337,10 @@ public class GuiConsole extends GuiScreen implements Runnable {
             String o = (String) i.next();
             bindings.put(o, (String) p.get(o));
          }
-      } catch (Exception e) {
+      } catch (FileNotFoundException e) {
+         System.out.println("[MCC] Could not find bindings.properties in " + MOD_DIR.getAbsolutePath());
+      } catch (IOException e) {
+         ModLoader.throwException(e);
       }
       return bindings;
    }
@@ -398,7 +410,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       Keyboard.enableRepeatEvents(false);
       isGuiOpen = false;
    }
-
+   
    /**
     * Called to update the screen on frame
     *
@@ -409,6 +421,16 @@ public class GuiConsole extends GuiScreen implements Runnable {
       updateCounter++;
    }
 
+   
+   @Override
+   public boolean doesGuiPauseGame() {
+      if(MISC_PASUE_GAME && CHAT_UNPASUE_PAUSE_WITH_MESSAGE && !pauseGame) {
+         pauseGame = (pauseCountDown-- <= 0)? true : false;
+         return false;
+      }
+      return MISC_PASUE_GAME;
+   }
+   
    /**
     * Called when a key is typed, handles all input into the console
     *
@@ -544,7 +566,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       else if(id == KEY_AUTOCOMPLETE)
       {
          clearHighlighting();
-         if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
+         /*if (message.startsWith("@get ") || message.startsWith("@list ") || message.startsWith("@set ")) {
             String[] str = message.split(" ");
 
             String match = "";
@@ -585,9 +607,9 @@ public class GuiConsole extends GuiScreen implements Runnable {
                   }
                }
             }
-         } else {
+         } else {*/
             updateTabPos(1);
-         }
+         //}
          return;
       }
 
@@ -874,11 +896,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
          //tabListPos = (tabListPos > tabMaxPos)? tabMaxPos : tabListPos; //if player leaves whiles browsing words
          tabMatchedWord = tabCurrentList.get(tabListPos);
          
-         if(message.length() > 0) {
+         if(message.length() > 0)
             message = message.substring(0, tabWordPos) + tabMatchedWord + tabAfterCursor;
-         } else {
+         else
             message = tabMatchedWord;
-         }
+         
          
          cursor = message.length();
       }
@@ -903,12 +925,15 @@ public class GuiConsole extends GuiScreen implements Runnable {
       return mc.isIntegratedServerRunning();
    }
    
-   
+   /**
+    * 
+    * @link{ GuiConsole.cleanString }
+    * @return cleaned servername or ""
+    */
    public String getServerName() {
       if(isMultiplayerMode()) {
-         String unclean = mc.getServerData().serverName;
-         unclean = (unclean.equals(null))? unclean : "";
-         return cleanString(unclean);
+         String name = mc.getServerData().serverName;
+         return (name.equals(null))? "" : cleanString(name);
       }
       return "";
    }
@@ -937,7 +962,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             name = matcher.replaceAll("");
             String cleanName = "";
             for (int i = 0; i < name.length(); i++) { //Get rid of every invalid character for minecraft usernames
-               if (name.charAt(i) == '§') { //Gets rid of color codes
+               if (name.charAt(i) == '\u00a7') { //Gets rid of color codes
                   i++;
                   continue;
                }
@@ -1694,7 +1719,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
    protected void mouseMovedOrUp(int mousex, int mousey, int button) {
       int wheel = Mouse.getDWheel();
       if (wheel != 0) {
-         slider += wheel / 120 * CHAT_LINES_PER_SCROLL;
+         slider += wheel / 120 * SCREEN_LINES_PER_SCROLL;
       }
 
       // Moves the slider position
@@ -1842,6 +1867,11 @@ public class GuiConsole extends GuiScreen implements Runnable {
             lastLen = end;
          }
       }
+      
+      if(CHAT_UNPASUE_PAUSE_WITH_MESSAGE && isGuiOpen) {
+         pauseGame = false;
+         pauseCountDown = 2;
+      }
    }
    
    /**
@@ -1896,6 +1926,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
       for (ConsoleListener cl : LISTENERS) {
          cl.processOutput(message);
       }
+      
    }
 
    /**
@@ -1934,7 +1965,7 @@ public class GuiConsole extends GuiScreen implements Runnable {
             }
 
             // Empties message list when it hits maximum size
-            while (OUTPUT_MAX != 0 && MESSAGES.size() > OUTPUT_MAX) {
+            while (CHAT_OUTPUT_MAX != 0 && MESSAGES.size() > CHAT_OUTPUT_MAX) {
                MESSAGES.remove(0);
                rebuildLines = true;
             }
@@ -2135,17 +2166,18 @@ public class GuiConsole extends GuiScreen implements Runnable {
                      field.setAccessible(true);
                   }
 
-                  if (field.getType().equals(String.class) ||
-                           field.getType().equals(Integer.TYPE) || 
-                           field.getType().equals(Double.TYPE) ||
-                           field.getType().equals(Boolean.TYPE) ||
-                           field.getType().equals(Long.TYPE) ||
-                           field.getType().equals(Byte.TYPE) ||
-                           field.getType().equals(Float.TYPE) ||
-                           field.getType().equals(Short.TYPE) ||
-                           field.getType().equals(Character.TYPE)) {
-                    fields.add(field); 
-                  }
+                  if (
+                           field.getType().equals(String.class)  ||
+                           field.getType().equals(Integer.TYPE)  || 
+                           field.getType().equals(Double.TYPE)   ||
+                           field.getType().equals(Boolean.TYPE)  ||
+                           field.getType().equals(Long.TYPE)     ||
+                           field.getType().equals(Byte.TYPE)     ||
+                           field.getType().equals(Float.TYPE)    ||
+                           field.getType().equals(Short.TYPE)    ||
+                           field.getType().equals(Character.TYPE)
+                     )
+                  { fields.add(field); }
                } catch (Exception e) {
                }
             }

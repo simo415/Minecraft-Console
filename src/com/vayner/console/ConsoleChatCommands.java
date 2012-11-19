@@ -111,9 +111,9 @@ public class ConsoleChatCommands implements ConsoleListener{
          
          reader.close();
       } catch (FileNotFoundException e) {
-         System.out.println("Console - " + commandFile.getPath() + " can't be found");
+         System.out.println("[MCC] " + commandFile.getPath() + " can't be found");
       } catch (IOException e) {
-         ModLoader.throwException("Console - IOException when reading / opening file", e);
+         ModLoader.throwException("[MCC] IOException when reading / opening file", e);
       }
 
       Collections.sort(commandList);
@@ -141,7 +141,7 @@ public class ConsoleChatCommands implements ConsoleListener{
          
       } catch (FileNotFoundException e){
       } catch (IOException e) {
-         ModLoader.throwException("Console - IOException when saving file", e);
+         ModLoader.throwException("[MCC] IOException when saving file", e);
       }
 
    }
